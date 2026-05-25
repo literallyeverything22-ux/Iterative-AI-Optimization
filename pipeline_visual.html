@@ -1,0 +1,1948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Consensus Pipeline - Interactive Cockpit</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #030712;
+    --surface: #0b0f19;
+    --surface-card: #111827;
+    --border: #1f2937;
+    --border-glow: rgba(0, 229, 255, 0.15);
+    
+    /* Neon Accents */
+    --accent: #00e5ff;
+    --accent-rgb: 0, 229, 255;
+    --accent-purple: #a259ff;
+    --accent-purple-rgb: 162, 89, 255;
+    --accent-orange: #ff6b35;
+    --accent-orange-rgb: 255, 107, 53;
+    --win: #05ff9b;
+    --win-rgb: 5, 255, 155;
+    --error: #ef4444;
+    
+    --text: #f3f4f6;
+    --text-muted: #9ca3af;
+    --text-dark: #6b7280;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    padding-bottom: 5rem;
+  }
+
+  /* Grid & Glow Effects */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(0, 229, 255, 0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 229, 255, 0.015) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    top: -20%; left: -10%;
+    width: 60vw; height: 60vw;
+    background: radial-gradient(circle, rgba(162, 89, 255, 0.07) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .glow-cyan {
+    position: fixed;
+    bottom: -20%; right: -10%;
+    width: 60vw; height: 60vw;
+    background: radial-gradient(circle, rgba(0, 229, 255, 0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 2rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header & Branding */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2.5rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 2rem;
+  }
+
+  .brand-logo {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: #fff;
+  }
+
+  h1 span {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-purple) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .subtitle {
+    margin-top: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* Interactive Data Dropzone */
+  .uploader-zone {
+    background: rgba(17, 24, 39, 0.4);
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 1.2rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    max-width: 480px;
+    backdrop-filter: blur(10px);
+  }
+
+  .uploader-zone:hover, .uploader-zone.dragover {
+    border-color: var(--accent);
+    background: rgba(0, 229, 255, 0.03);
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.05);
+  }
+
+  .uploader-icon {
+    font-size: 2rem;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 229, 255, 0.1);
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
+
+  .uploader-text h4 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.2rem;
+  }
+
+  .uploader-text p {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  #file-input { display: none; }
+
+  /* Tab Controller */
+  .tab-container {
+    display: flex;
+    gap: 0.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 0.4rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+    max-width: fit-content;
+  }
+
+  .tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 0.6rem 1.2rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Space Mono', monospace;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .tab-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .tab-btn.active {
+    color: #fff;
+    background: var(--surface-card);
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .tab-btn .indicator-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--text-dark);
+  }
+
+  .tab-btn.active .indicator-dot {
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  /* Cockpit Layout Grid */
+  .cockpit-grid {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+
+  /* Left Panel: Control & Run Summary */
+  .control-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .panel-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.8rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .panel-title span {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent-purple);
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .form-group label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .form-control-static {
+    background: #000;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .param-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .param-badge {
+    background: #070b13;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.8rem;
+    text-align: center;
+  }
+
+  .param-val {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--accent);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .param-lbl {
+    font-size: 0.65rem;
+    font-family: 'Space Mono', monospace;
+    color: var(--text-dark);
+    margin-top: 0.2rem;
+    text-transform: uppercase;
+  }
+
+  /* Simulate Actions */
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-purple) 100%);
+    color: #000;
+    border: none;
+    font-weight: 800;
+    font-size: 0.9rem;
+    padding: 1rem;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.8rem;
+    transition: all 0.3s;
+    font-family: 'Space Mono', monospace;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 25px rgba(0, 229, 255, 0.4);
+    filter: brightness(1.1);
+  }
+
+  .btn-primary:disabled {
+    filter: grayscale(1);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .sim-status-box {
+    background: rgba(162, 89, 255, 0.05);
+    border: 1px dashed rgba(162, 89, 255, 0.2);
+    border-radius: 10px;
+    padding: 1rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .status-line {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .status-lbl { color: var(--text-muted); }
+  .status-val { font-weight: bold; }
+  .status-val.active { color: var(--accent); }
+  .status-val.finished { color: var(--win); }
+
+  .progress-bar-container {
+    width: 100%;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 0.4rem;
+  }
+
+  .progress-bar-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-purple));
+    transition: width 0.3s;
+  }
+
+  /* Right Panel: Active Canvas Window */
+  .canvas-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    min-height: 580px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tab-pane {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    flex-grow: 1;
+  }
+
+  .tab-pane.active {
+    display: flex;
+  }
+
+  .pane-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .pane-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .pane-title-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .pane-desc {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* Interactive SVG Cluster Map */
+  .cluster-canvas-wrapper {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #010409;
+    aspect-ratio: 16/9;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .cluster-canvas-wrapper::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image: 
+      radial-gradient(var(--border) 1px, transparent 1px);
+    background-size: 20px 20px;
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  .cluster-svg {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Hover Inspect Details */
+  .inspect-overlay {
+    position: absolute;
+    bottom: 1.2rem; left: 1.2rem; right: 1.2rem;
+    background: rgba(11, 15, 25, 0.95);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    backdrop-filter: blur(10px);
+    z-index: 10;
+    transform: translateY(120%);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 -10px 25px rgba(0,0,0,0.4);
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .inspect-overlay.active {
+    transform: translateY(0);
+  }
+
+  .inspect-header {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: bold;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.4rem;
+  }
+
+  .inspect-body {
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: var(--text);
+    overflow-y: auto;
+    max-height: 80px;
+    margin-top: 0.2rem;
+  }
+
+  /* SVG node styling */
+  .node-group {
+    cursor: pointer;
+  }
+
+  .node-dot {
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .node-group:hover .node-dot {
+    stroke-width: 3px !important;
+    r: 10px !important;
+  }
+
+  .node-centroid {
+    animation: centroidPulse 2s infinite ease-in-out;
+  }
+
+  @keyframes centroidPulse {
+    0%, 100% { r: 12px; stroke-width: 2px; stroke-opacity: 0.8; }
+    50% { r: 18px; stroke-width: 6px; stroke-opacity: 0.3; }
+  }
+
+  /* Heatmap Layout */
+  .heatmap-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 1.5rem;
+    flex-grow: 1;
+  }
+
+  .heatmap-grid-container {
+    background: #010409;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: auto;
+  }
+
+  .heatmap-svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .heatmap-cell {
+    transition: all 0.15s;
+    cursor: crosshair;
+  }
+
+  .heatmap-cell:hover {
+    stroke: #fff;
+    stroke-width: 1.5px;
+    filter: brightness(1.2);
+  }
+
+  .comparison-panel {
+    border: 1px solid var(--border);
+    background: rgba(17, 24, 39, 0.4);
+    border-radius: 12px;
+    padding: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    height: 100%;
+    overflow-y: auto;
+  }
+
+  .comparison-header {
+    font-size: 0.8rem;
+    font-family: 'Space Mono', monospace;
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  .compare-subcard {
+    background: var(--surface-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .compare-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .compare-body {
+    font-size: 0.78rem;
+    line-height: 1.45;
+    color: var(--text);
+  }
+
+  /* Tab 1: Flow and Simulator Steps */
+  .flow-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    margin-top: 0.5rem;
+  }
+
+  .flow-step-card {
+    display: grid;
+    grid-template-columns: 2.2rem 1fr;
+    gap: 1.2rem;
+    opacity: 0.3;
+    transform: translateY(10px);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .flow-step-card.active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .flow-step-badge {
+    width: 2.2rem; height: 2.2rem;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: #010409;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: var(--text-dark);
+    transition: all 0.3s;
+  }
+
+  .flow-step-card.active .flow-step-badge {
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
+  }
+
+  .flow-step-card.success .flow-step-badge {
+    border-color: var(--win);
+    color: var(--win);
+    box-shadow: 0 0 12px rgba(5, 255, 155, 0.2);
+  }
+
+  .flow-step-body {
+    background: var(--surface-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.2rem 1.5rem;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .flow-step-card.active .flow-step-body {
+    border-color: rgba(0, 229, 255, 0.3);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  }
+
+  .flow-step-card.success .flow-step-body::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 3px;
+    background: var(--win);
+  }
+
+  .flow-step-card.active .flow-step-body::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent);
+  }
+
+  .flow-step-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.4rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .flow-step-title .badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+
+  .flow-step-desc {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    line-height: 1.55;
+  }
+
+  .flow-visualizer-dock {
+    margin-top: 1rem;
+    background: #010409;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.8rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    display: none;
+    max-height: 160px;
+    overflow-y: auto;
+    line-height: 1.5;
+  }
+
+  .flow-step-card.active .flow-visualizer-dock {
+    display: block;
+  }
+
+  /* Step Visual elements */
+  .parallel-bar-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 6px;
+    margin-top: 0.6rem;
+  }
+
+  .parallel-bar {
+    height: 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .parallel-bar.generating {
+    background: rgba(0, 229, 255, 0.02);
+    border-color: rgba(0, 229, 255, 0.15);
+  }
+
+  .parallel-bar.generating::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(0, 229, 255, 0.4), transparent);
+    animation: barPulse 1.2s infinite linear;
+  }
+
+  @keyframes barPulse {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  .parallel-bar.completed {
+    background: rgba(5, 255, 155, 0.15);
+    border-color: rgba(5, 255, 155, 0.4);
+  }
+
+  .parallel-bar.completed::after {
+    display: none;
+  }
+
+  /* final output card */
+  .final-output-card {
+    background: rgba(5, 255, 155, 0.02);
+    border: 1px solid rgba(5, 255, 155, 0.15);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  }
+
+  .final-output-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(5, 255, 155, 0.15);
+    padding-bottom: 0.8rem;
+  }
+
+  .final-output-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--win);
+  }
+
+  .final-output-badge .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--win);
+    box-shadow: 0 0 8px var(--win);
+    animation: dotPulse 1.5s infinite;
+  }
+
+  @keyframes dotPulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+
+  .final-output-body {
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: #f3f4f6;
+  }
+
+  .final-output-footer {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-dark);
+    background: #010409;
+    border: 1px solid var(--border);
+    padding: 0.6rem 1rem;
+    border-radius: 6px;
+  }
+
+  /* Comparison stats bar in final card */
+  .diff-table {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .diff-col {
+    background: rgba(17, 24, 39, 0.5);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.8rem 1.2rem;
+  }
+
+  .diff-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.4rem;
+  }
+
+  .diff-col.bad .diff-title { color: var(--accent-orange); }
+  .diff-col.good .diff-title { color: var(--win); }
+
+  .diff-metric-row {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    padding: 0.3rem 0;
+  }
+
+  .diff-metric-row:last-child {
+    border-bottom: none;
+  }
+
+  .diff-metric-row strong {
+    color: #fff;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 1024px) {
+    .cockpit-grid {
+      grid-template-columns: 1fr;
+    }
+    .uploader-zone {
+      max-width: none;
+    }
+  }
+
+  @media (max-width: 768px) {
+    header {
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .heatmap-wrapper {
+      grid-template-columns: 1fr;
+    }
+    .diff-table {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="glow-cyan"></div>
+<div class="container">
+
+  <!-- Header -->
+  <header>
+    <div class="brand-logo">
+      <div class="tag">// stochastic convergence dashboard</div>
+      <h1>Consensus <span>Cockpit</span></h1>
+      <div class="subtitle">Visualizing AI Consensus Sampling & Polishing Loops</div>
+    </div>
+    
+    <!-- JSON Run Uploader -->
+    <div class="uploader-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+      <div class="uploader-icon">⚡</div>
+      <div class="uploader-text">
+        <h4>Load Actual Pipeline Run</h4>
+        <p id="upload-status">Drop run_data.json or click to select</p>
+      </div>
+      <input type="file" id="file-input" accept=".json"/>
+    </div>
+  </header>
+
+  <!-- Interactive Controls & Tabs Section -->
+  <div class="cockpit-grid">
+
+    <!-- Left Controls Panel -->
+    <div class="control-card">
+      <div class="panel-title">
+        Run Profile
+        <span id="source-badge">SIMULATOR MODE</span>
+      </div>
+
+      <div class="form-group">
+        <label>Active Prompt</label>
+        <div class="form-control-static" id="ctrl-prompt" title="Explain Quantum Computing simply.">Explain Quantum Computing simply.</div>
+      </div>
+
+      <div class="form-group">
+        <label>Target LLM Model</label>
+        <div class="form-control-static" id="ctrl-model">mistral (local)</div>
+      </div>
+
+      <div class="param-grid">
+        <div class="param-badge">
+          <div class="param-val" id="ctrl-samples">20</div>
+          <div class="param-lbl">Generations</div>
+        </div>
+        <div class="param-badge">
+          <div class="param-val" id="ctrl-refine">2</div>
+          <div class="param-lbl">Refinement</div>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="btn-run-sim">
+        <span id="btn-text">RUN FULL SIMULATION</span>
+      </button>
+
+      <!-- Simulation State Monitor -->
+      <div class="sim-status-box" id="sim-status-panel" style="display: none;">
+        <div class="status-line">
+          <span class="status-lbl">Engine Status:</span>
+          <span class="status-val active" id="sim-state">IDLE</span>
+        </div>
+        <div class="status-line">
+          <span class="status-lbl">Execution Time:</span>
+          <span class="status-val" id="sim-time">0.0s</span>
+        </div>
+        <div class="status-line">
+          <span class="status-lbl">Consensus Score:</span>
+          <span class="status-val" id="sim-score">-</span>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-bar-fill" id="sim-progress-bar"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Window Canvas Area -->
+    <div class="canvas-card">
+      
+      <!-- Tab Controller -->
+      <div class="tab-container">
+        <button class="tab-btn active" data-tab="tab-flow">
+          <span class="indicator-dot"></span>
+          Pipeline Flow
+        </button>
+        <button class="tab-btn" data-tab="tab-cluster">
+          <span class="indicator-dot"></span>
+          2D Cluster Map
+        </button>
+        <button class="tab-btn" data-tab="tab-heatmap">
+          <span class="indicator-dot"></span>
+          Similarity Heatmap
+        </button>
+      </div>
+
+      <!-- TAB 1: Pipeline Flow & Process Simulator -->
+      <div class="tab-pane active" id="tab-flow">
+        <div class="pane-header">
+          <div>
+            <div class="pane-title"><span class="pane-title-dot"></span>Process Pipeline Flow</div>
+            <div class="pane-desc">Observe the step-by-step mathematical convergence stages.</div>
+          </div>
+        </div>
+
+        <div class="flow-timeline">
+          <!-- Step 1 -->
+          <div class="flow-step-card" id="step-card-1">
+            <div class="flow-step-badge">01</div>
+            <div class="flow-step-body">
+              <div class="flow-step-title">
+                Stochastic Generation
+                <span class="badge">N = 20 Samples</span>
+              </div>
+              <div class="flow-step-desc">
+                Generate 20 independent outputs from your model in parallel at Temperature = 0.8 to maximize conceptual coverage.
+              </div>
+              <div class="parallel-bar-grid" id="step-1-bars">
+                <!-- Bars rendered dynamically -->
+              </div>
+              <div class="flow-visualizer-dock" id="dock-1"></div>
+            </div>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="flow-step-card" id="step-card-2">
+            <div class="flow-step-badge">02</div>
+            <div class="flow-step-body">
+              <div class="flow-step-title">
+                Semantic Embedding Projection
+                <span class="badge">all-MiniLM-L6-v2</span>
+              </div>
+              <div class="flow-step-desc">
+                Project each text sample into a 384-dimensional dense floating vector, locking in semantic context over raw syntax.
+              </div>
+              <div class="flow-visualizer-dock" id="dock-2"></div>
+            </div>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="flow-step-card" id="step-card-3">
+            <div class="flow-step-badge">03</div>
+            <div class="flow-step-body">
+              <div class="flow-step-title">
+                Similarity Centroiding (Consensus)
+                <span class="badge">Cosine Matrix Mean</span>
+              </div>
+              <div class="flow-step-desc">
+                Construct an N x N cosine similarity matrix. Compute mean similarities to isolate the mathematical 'centroid' winner.
+              </div>
+              <div class="flow-visualizer-dock" id="dock-3"></div>
+            </div>
+          </div>
+
+          <!-- Step 4 -->
+          <div class="flow-step-card" id="step-card-4">
+            <div class="flow-step-badge">04</div>
+            <div class="flow-step-body">
+              <div class="flow-step-title">
+                Low-Temperature Polishing
+                <span class="badge">2 Refinement Rounds</span>
+              </div>
+              <div class="flow-step-desc">
+                Extract the centroid winner and run focused low-temperature (T=0.4) iterations to polish structure and clarity.
+              </div>
+              <div class="flow-visualizer-dock" id="dock-4"></div>
+            </div>
+          </div>
+
+          <!-- Step 5: Final Output (Initially hidden until completed) -->
+          <div class="flow-step-card" id="step-card-5" style="display: none;">
+            <div class="flow-step-badge">05</div>
+            <div class="flow-step-body">
+              <div class="final-output-card">
+                <div class="final-output-header">
+                  <div class="final-output-badge">
+                    <span class="dot"></span>
+                    FINAL OPTIMIZED OUTPUT
+                  </div>
+                  <span style="font-family:'Space Mono', monospace; font-size:0.75rem; color:var(--win);" id="final-stats-badge">Score: 0.9100</span>
+                </div>
+                <div class="final-output-body" id="final-output-display">
+                  Click 'RUN FULL SIMULATION' on the control panel to see the finalized output.
+                </div>
+                
+                <div class="diff-table">
+                  <div class="diff-col bad">
+                    <div class="diff-title">Without Pipeline (Baseline)</div>
+                    <div class="diff-metric-row">Structure: <span>Unrefined</span></div>
+                    <div class="diff-metric-row">Precision: <span>High Variance</span></div>
+                    <div class="diff-metric-row">Hallucinations: <span>Possible</span></div>
+                  </div>
+                  <div class="diff-col good">
+                    <div class="diff-title">With Consensus Optimization</div>
+                    <div class="diff-metric-row">Structure: <span>Centroid + 2 Refinements</span></div>
+                    <div class="diff-metric-row">Precision: <span>Mathematically Converged</span></div>
+                    <div class="diff-metric-row">Hallucinations: <span>Filtered Outliers</span></div>
+                  </div>
+                </div>
+                
+                <div class="final-output-footer">
+                  <span id="final-footer-model">Refinement Model: mistral</span>
+                  <span>Pipeline Latency: ~3m 40s</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: Interactive 2D Cluster Map -->
+      <div class="tab-pane" id="tab-cluster">
+        <div class="pane-header">
+          <div>
+            <div class="pane-title"><span class="pane-title-dot"></span>2D Vector Semantic Map</div>
+            <div class="pane-desc">Visualizing high-dimensional embeddings mapped into 2D cluster coordinates.</div>
+          </div>
+        </div>
+
+        <div class="cluster-canvas-wrapper">
+          <svg class="cluster-svg" id="cluster-svg-elem" viewBox="0 0 800 450">
+            <!-- Grid Lines and Nodes rendered dynamically -->
+          </svg>
+          
+          <!-- Hover Inspector Overlay -->
+          <div class="inspect-overlay" id="cluster-inspector">
+            <div class="inspect-header">
+              <span id="inspect-node-id">Sample #01</span>
+              <span id="inspect-node-score">Score: 0.7820</span>
+            </div>
+            <div class="inspect-body" id="inspect-node-text">
+              Hover over a node in the vector plot to inspect the raw generated text sample.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: Interactive Cosine Similarity Heatmap -->
+      <div class="tab-pane" id="tab-heatmap">
+        <div class="pane-header">
+          <div>
+            <div class="pane-title"><span class="pane-title-dot"></span>Cosine Similarity Matrix</div>
+            <div class="pane-desc">Inspect pairwise semantic overlap. Brighter cells indicate tighter convergence.</div>
+          </div>
+        </div>
+
+        <div class="heatmap-wrapper">
+          <!-- The Heatmap Grid -->
+          <div class="heatmap-grid-container">
+            <svg class="heatmap-svg" id="heatmap-svg-elem" width="400" height="400" viewBox="0 0 400 400">
+              <!-- Rendered dynamically -->
+            </svg>
+          </div>
+
+          <!-- Comparison Side-Panel -->
+          <div class="comparison-panel">
+            <div class="comparison-header">PAIRWISE INSPECTOR</div>
+            
+            <div class="compare-subcard">
+              <div class="compare-title">
+                <span id="comp-label-1">SAMPLE X</span>
+                <span id="comp-score-1">-</span>
+              </div>
+              <div class="compare-body" id="comp-text-1">
+                Hover over cells in the heatmap grid to load samples.
+              </div>
+            </div>
+
+            <div class="compare-subcard">
+              <div class="compare-title">
+                <span id="comp-label-2">SAMPLE Y</span>
+                <span id="comp-score-2">-</span>
+              </div>
+              <div class="compare-body" id="comp-text-2">
+                Hover over cells in the heatmap grid to load samples.
+              </div>
+            </div>
+
+            <div class="compare-subcard" style="background: rgba(0, 229, 255, 0.03); border-color: rgba(0, 229, 255, 0.1);">
+              <div class="compare-title" style="color: var(--accent);">COHERENCE VALUE</div>
+              <div class="compare-body" id="comp-pairwise-sim" style="font-size: 1.2rem; font-weight: 800; font-family: 'Space Mono', monospace; text-align: center; margin-top: 0.3rem;">
+                -
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Global Application State
+  const AppState = {
+    prompt: "Explain Quantum Computing simply.",
+    model: "mistral",
+    n_samples: 20,
+    refine_rounds: 2,
+    samples: [],
+    similarity_matrix: [],
+    winner_id: -1,
+    raw_winner: "",
+    refinements: [],
+    final_output: "",
+    is_simulating: false,
+    source: "SIMULATOR" // or "LIVE_LOAD"
+  };
+
+  // Realistic Simulation Pre-baked Dataset
+  const MOCK_DATASET = {
+    prompt: "Explain Quantum Computing simply.",
+    model: "mistral",
+    n_samples: 20,
+    refine_rounds: 2,
+    winner_id: 1, // 0-indexed corresponding to Sample #02
+    raw_winner: "Imagine a coin. A regular computer is like a coin flat on the table: it can only be heads (1) or tails (0). A quantum computer uses coins that are spinning. While spinning, the coin is in a state of both heads and tails at the same time. This is superposition, allowing them to test millions of possibilities simultaneously.",
+    refinements: [
+      "Here is an improved output:\n\nImagine a coin resting on a table. A classical computer handles data just like that coin: it can only lie flat, representing either heads (1) or tails (0). A quantum computer, however, operates by spinning those coins. While spinning in mid-air, the coin exists in a fluid state of both heads and tails simultaneously. This quantum phenomenon is called **superposition**.\n\nBecause qubits (spinning coins) can represent multiple states at once, quantum computers don't just calculate options one-by-one. Instead, they explore billions of pathways in parallel, enabling them to solve incredibly complex puzzles—like mapping molecules or cracking complex code systems—at lightning speed.",
+      "Here is the final polished output:\n\nImagine a coin lying flat on a table. A classical computer represents data just like that coin: it can only exist in one of two static positions, heads (1) or tails (0). \n\nA quantum computer, however, works with coins that are spinning. While in motion, a spinning coin is in a fluid state of both heads and tails simultaneously. This is the essence of **superposition**, the building block of quantum bits, or **qubits**.\n\nAdditionally, these spinning coins can be linked through a mysterious link called **entanglement**. When qubits are entangled, the state of one instantly influences another, allowing them to work in perfect synchronization.\n\nRather than calculating possibilities sequentially (one-by-one), a quantum computer processes millions of pathways in parallel. This massive, fluid parallel computational architecture allows it to solve calculations that would take a standard supercomputer thousands of years—unlocking groundbreaking discoveries in medicine, cryptography, and complex system optimizations."
+    ],
+    final_output: "Imagine a coin lying flat on a table. A classical computer represents data just like that coin: it can only exist in one of two static positions, heads (1) or tails (0). \n\nA quantum computer, however, works with coins that are spinning. While in motion, a spinning coin is in a fluid state of both heads and tails simultaneously. This is the essence of **superposition**, the building block of quantum bits, or **qubits**.\n\nAdditionally, these spinning coins can be linked through a mysterious link called **entanglement**. When qubits are entangled, the state of one instantly influences another, allowing them to work in perfect synchronization.\n\nRather than calculating possibilities sequentially (one-by-one), a quantum computer processes millions of pathways in parallel. This massive, fluid parallel computational architecture allows it to solve calculations that would take a standard supercomputer thousands of years—unlocking groundbreaking discoveries in medicine, cryptography, and complex system optimizations.",
+    samples: [
+      { id: 1, text: "Quantum computing uses qubits instead of normal bits. While a normal bit can only be 0 or 1, a qubit can be both at the same time thanks to superposition. This lets quantum computers solve complex problems much faster.", avg_similarity: 0.8654, is_winner: false, coordinates: [15, 20] },
+      { id: 2, text: "Imagine a coin. A regular computer is like a coin flat on the table: it can only be heads (1) or tails (0). A quantum computer uses coins that are spinning. While spinning, the coin is in a state of both heads and tails at the same time. This is superposition, allowing them to test millions of possibilities simultaneously.", avg_similarity: 0.9100, is_winner: true, coordinates: [-5, -2] },
+      { id: 3, text: "A quantum computer uses quantum mechanics to do math. Instead of regular bits (0 and 1), it uses qubits. Qubits can exist in superposition (both 0 and 1) and can be entangled, meaning their states are linked. This makes them extremely fast at certain calculations.", avg_similarity: 0.8845, is_winner: false, coordinates: [-10, 15] },
+      { id: 4, text: "Standard computers use electrical switches that are either off (0) or on (1). Quantum computers use qubits, which are like dimmer switches that can be anywhere in between. Because qubits can represent many states at once, quantum computers can process huge amounts of data in parallel.", avg_similarity: 0.8520, is_winner: false, coordinates: [25, -18] },
+      { id: 5, text: "Qubits are the building blocks of quantum computers. They can be in a state of 0, 1, or both simultaneously (superposition). This is different from classical bits which are binary. Quantum computers excel at cryptography and simulation because of this massive parallel processing capacity.", avg_similarity: 0.8410, is_winner: false, coordinates: [-28, -25] },
+      { id: 6, text: "In the quantum world, particles can be in multiple places at once. Quantum computers harness this using qubits. Through superposition and entanglement, qubits process a massive combination of possibilities, solving problems that would take classical computers thousands of years.", avg_similarity: 0.8765, is_winner: false, coordinates: [2, 18] },
+      { id: 7, text: "Regular computer: basic bits (0 or 1). Quantum computer: quantum bits or qubits. Qubits leverage superposition to represent 0 and 1 at the same time, and entanglement to link qubits together. This creates exponential processing power for specific algorithms like Shor's.", avg_similarity: 0.8495, is_winner: false, coordinates: [-22, 5] },
+      { id: 8, text: "Quantum computing is a new technology that uses the principles of quantum physics. Traditional computers use binary digits (bits) of 0 and 1. Quantum computers use qubits which can be both 0 and 1 at once. This superposition allows them to tackle massive databases in parallel.", avg_similarity: 0.8710, is_winner: false, coordinates: [8, -12] },
+      { id: 9, text: "Think of quantum computing as having a magic library. Instead of reading one book at a time like a classical computer, a quantum computer can read every single book in the library at the same time. It does this because its qubits can be in multiple states simultaneously.", avg_similarity: 0.8350, is_winner: false, coordinates: [35, 10] },
+      { id: 10, text: "Superposition and entanglement are two weird features of quantum physics that quantum computers use. Normal computers use binary bits (0/1) for calculations, while quantum computers use qubits. Qubits can represent both states at once, unlocking immense computational speed.", avg_similarity: 0.8690, is_winner: false, coordinates: [-5, 25] },
+      { id: 11, text: "A quantum computer is like a regular computer on steroids. It uses qubits instead of classical bits. These qubits can be in superposition (meaning they are both 0 and 1 at the same time). This allows quantum computers to perform calculations in a fraction of the time.", avg_similarity: 0.7920, is_winner: false, coordinates: [-45, 18] },
+      { id: 12, text: "Quantum mechanics rules the subatomic world. Quantum computers capitalize on this by using qubits. By utilizing superposition, where a qubit is both 0 and 1, and entanglement, they can perform highly complex parallel math for molecule discovery.", avg_similarity: 0.8240, is_winner: false, coordinates: [18, -30] },
+      { id: 13, text: "Qubits are subatomic particles like electrons or photons controlled by lasers or microwaves. Because of superposition, they can represent 0, 1, or any quantum proportion of both. This enables parallel computations of unimaginable scale.", avg_similarity: 0.7710, is_winner: false, coordinates: [-20, 38] },
+      { id: 14, text: "The core difference between classical and quantum computing is the qubit. While classical bits are binary and rigid, qubits leverage superposition (0 and 1 simultaneously) to explore multiple pathways at once, revolutionizing optimization problems.", avg_similarity: 0.8490, is_winner: false, coordinates: [-12, -18] },
+      { id: 15, text: "Quantum computers don't just speed up regular computer tasks; they solve them differently. By coding data into qubits that utilize superposition, quantum algorithms can calculate combinations simultaneously instead of sequentially.", avg_similarity: 0.8120, is_winner: false, coordinates: [30, -5] },
+      
+      // Outliers
+      { id: 16, text: "In silence spun of light and cold, / A story of the qubit told. / Not one, not zero, but the dance / Of infinite and parallel chance. / A coin suspended in the air, / Resolving answers everywhere.", avg_similarity: 0.5420, is_winner: false, coordinates: [85, 45] },
+      { id: 17, text: "A quantum computer operates by manipulating quantum states of physical systems (e.g., Josephson junctions, trapped ions, or topological qubits) using unitary transformations represented by matrices in Hilbert space. Computations utilize Shor's and Grover's algorithms to achieve polynomial or exponential speedup over classical Turing machines.", avg_similarity: 0.6120, is_winner: false, coordinates: [-50, -68] },
+      { id: 18, text: "Quantum computers are super fast computers that use quantum bits to do parallel math.", avg_similarity: 0.6980, is_winner: false, coordinates: [68, -48] },
+      { id: 19, text: "Quantum computing works by using qubits that travel faster than the speed of light. Because they move faster than light, they can travel back in time to retrieve the answer before you even ask the question, creating instant calculations.", avg_similarity: 0.4980, is_winner: false, coordinates: [-88, 55] },
+      { id: 20, text: "I can definitely write an essay about quantum computing! The history of computing starts in the 19th century with Charles Babbage's analytical engine. Later, Alan Turing defined the theoretical framework...", avg_similarity: 0.4560, is_winner: false, coordinates: [15, 90] }
+    ]
+  };
+
+  // Generate a mock similarity matrix based on real similarities + some noise
+  function generateMockMatrix(samples) {
+    const N = samples.length;
+    const matrix = Array(N).fill(null).map(() => Array(N).fill(0));
+    for (let i = 0; i < N; i++) {
+      for (let j = i; j < N; j++) {
+        if (i === j) {
+          matrix[i][j] = 1.0;
+        } else {
+          // Compute logical similarity based on their vector distance
+          const [x1, y1] = samples[i].coordinates;
+          const [x2, y2] = samples[j].coordinates;
+          const dist = Math.sqrt((x1 - x2)**2 + (y1 - y2)**2);
+          
+          // Map distance to a similarity score between [0.35, 0.95]
+          let sim = 0.95 - (dist / 220) * 0.6;
+          sim = Math.max(0.35, Math.min(0.95, sim));
+          
+          // Add minor noise
+          sim += (Math.random() - 0.5) * 0.04;
+          sim = parseFloat(sim.toFixed(4));
+          
+          matrix[i][j] = sim;
+          matrix[j][i] = sim;
+        }
+      }
+    }
+    return matrix;
+  }
+  
+  MOCK_DATASET.similarity_matrix = generateMockMatrix(MOCK_DATASET.samples);
+
+  // Initialize App on Load
+  window.addEventListener('DOMContentLoaded', () => {
+    setupTabControllers();
+    setupUploader();
+    loadDataset(MOCK_DATASET, true); // Load simulator pre-baked data initially
+    
+    document.getElementById('btn-run-sim').addEventListener('click', runFullSimulation);
+  });
+
+  // Load a complete run data packet into state and refresh DOM
+  function loadDataset(dataset, isSimulated = false) {
+    AppState.prompt = dataset.prompt || "Explain Quantum Computing simply.";
+    AppState.model = dataset.model || "unknown model";
+    AppState.n_samples = dataset.n_samples || (dataset.samples ? dataset.samples.length : 20);
+    AppState.refine_rounds = dataset.refine_rounds || 0;
+    AppState.samples = dataset.samples || [];
+    AppState.similarity_matrix = dataset.similarity_matrix || [];
+    AppState.winner_id = dataset.winner_id !== undefined ? dataset.winner_id : -1;
+    AppState.raw_winner = dataset.raw_winner || "";
+    AppState.refinements = dataset.refinements || [];
+    AppState.final_output = dataset.final_output || "";
+    AppState.source = isSimulated ? "SIMULATOR" : "LIVE_LOAD";
+
+    // Refresh UI static labels
+    document.getElementById('ctrl-prompt').innerText = AppState.prompt;
+    document.getElementById('ctrl-prompt').title = AppState.prompt;
+    document.getElementById('ctrl-model').innerText = AppState.model;
+    document.getElementById('ctrl-samples').innerText = AppState.n_samples;
+    document.getElementById('ctrl-refine').innerText = AppState.refine_rounds;
+    
+    const badge = document.getElementById('source-badge');
+    if (isSimulated) {
+      badge.innerText = "SIMULATOR MODE";
+      badge.style.color = "var(--accent-purple)";
+      document.getElementById('btn-run-sim').style.display = "flex";
+      document.getElementById('btn-run-sim').disabled = false;
+      document.getElementById('btn-run-sim').querySelector('#btn-text').innerText = "RUN FULL SIMULATION";
+    } else {
+      badge.innerText = "LIVE DATA LOADED";
+      badge.style.color = "var(--win)";
+      document.getElementById('btn-run-sim').style.display = "none";
+      
+      // Directly render visual maps if loading live run
+      showLiveResultsDirectly();
+    }
+
+    // Reset simulator UI panels
+    document.getElementById('sim-status-panel').style.display = isSimulated ? 'none' : 'flex';
+    if (!isSimulated) {
+      document.getElementById('sim-state').innerText = "COMPLETED";
+      document.getElementById('sim-state').className = "status-val finished";
+      document.getElementById('sim-time').innerText = "N/A";
+      
+      const winningSample = AppState.samples.find(s => s.is_winner);
+      if (winningSample) {
+        document.getElementById('sim-score').innerText = winningSample.avg_similarity.toFixed(4);
+      } else {
+        document.getElementById('sim-score').innerText = "N/A";
+      }
+      document.getElementById('sim-progress-bar').style.width = "100%";
+    }
+  }
+
+  // Directly sets up and renders loaded JSON run files
+  function showLiveResultsDirectly() {
+    // 1. Populate flow pipeline steps with completed logs
+    const timelineCards = document.querySelectorAll('.flow-step-card');
+    timelineCards.forEach(card => {
+      card.classList.add('active', 'success');
+      card.style.display = "grid";
+    });
+
+    // Populate Docks
+    // Dock 1
+    const dock1 = document.getElementById('dock-1');
+    dock1.innerHTML = `<div>✓ Completed parallel generation of ${AppState.n_samples} samples.</div>`;
+    dock1.innerHTML += `<div class="parallel-bar-grid">` + 
+      Array(AppState.n_samples).fill().map(() => `<div class="parallel-bar completed"></div>`).join('') + 
+      `</div>`;
+    
+    // Dock 2
+    document.getElementById('dock-2').innerHTML = `<div>✓ Projected ${AppState.n_samples} samples into high-dim semantic space.</div><div>✓ Local embedding size: 384 dimensions.</div>`;
+    
+    // Dock 3
+    const winnerScore = AppState.samples[AppState.winner_id] ? AppState.samples[AppState.winner_id].avg_similarity : 0.9100;
+    document.getElementById('dock-3').innerHTML = `<div>✓ Consensus isolated at Centroid ID: <strong>Sample #${String(AppState.winner_id + 1).padStart(2, '0')}</strong></div>` +
+      `<div>✓ Max average cosine similarity score: <strong>${winnerScore.toFixed(4)}</strong></div>` +
+      `<div style="margin-top:0.4rem; padding: 0.5rem; background:#070b13; border: 1px solid var(--border); border-radius:4px; font-size:0.7rem; color:#fff;">"${AppState.raw_winner}"</div>`;
+    
+    // Dock 4
+    const d4 = document.getElementById('dock-4');
+    d4.innerHTML = `<div>✓ Active low-temp refinement rounds: ${AppState.refine_rounds}</div>`;
+    AppState.refinements.forEach((ref, idx) => {
+      d4.innerHTML += `<div style="margin-top:0.4rem; color:var(--win);">Round ${idx+1} Refined output preview:</div>` + 
+        `<div style="padding:0.4rem; font-size:0.65rem; background:#070b13; border:1px solid rgba(5,255,155,0.15); border-radius:4px; margin-top:0.2rem;">${ref.substring(0, 100)}...</div>`;
+    });
+
+    // Final Output Display
+    document.getElementById('final-output-display').innerText = AppState.final_output;
+    document.getElementById('final-stats-badge').innerText = `Score: ${winnerScore.toFixed(4)}`;
+    document.getElementById('final-footer-model').innerText = `Refinement Model: ${AppState.model}`;
+
+    // Render interactive charts
+    render2DClusterMap();
+    renderSimilarityHeatmap();
+  }
+
+  // TAB CONTROLLERS
+  function setupTabControllers() {
+    const tabs = document.querySelectorAll('.tab-btn');
+    const panes = document.querySelectorAll('.tab-pane');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const targetTab = tab.getAttribute('data-tab');
+        
+        tabs.forEach(t => t.classList.remove('active'));
+        panes.forEach(p => p.classList.remove('active'));
+
+        tab.classList.add('active');
+        document.getElementById(targetTab).classList.add('active');
+      });
+    });
+  }
+
+  // FILE DRAG & DROP UPLOADER
+  function setupUploader() {
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+
+    // Prevent defaults
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    // Highlight drop bounds
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+    });
+
+    // Handle dropped files
+    dropZone.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files.length > 0) {
+        handleFile(files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleFile(e.target.files[0]);
+      }
+    });
+  }
+
+  function handleFile(file) {
+    if (file.type !== "application/json" && !file.name.endsWith('.json')) {
+      alert("Invalid file format. Please drop a valid structured .json run packet.");
+      return;
+    }
+
+    const reader = new FileReader();
+    const status = document.getElementById('upload-status');
+    status.innerText = "Parsing data file...";
+
+    reader.onload = function(e) {
+      try {
+        const dataset = JSON.parse(e.target.result);
+        
+        // Validation check
+        if (!dataset.samples || !dataset.similarity_matrix) {
+          throw new Error("Missing required 'samples' or 'similarity_matrix' schema fields.");
+        }
+
+        loadDataset(dataset, false);
+        status.innerText = `Loaded: ${file.name}`;
+      } catch (err) {
+        status.innerText = "Upload failed!";
+        alert("Failed to parse JSON file structure: " + err.message);
+      }
+    };
+    
+    reader.onerror = () => {
+      status.innerText = "File read error!";
+    };
+
+    reader.readAsText(file);
+  }
+
+  // -------------------------------------------------------------
+  // SIMULATOR ENGINE (Interactive Mode)
+  // -------------------------------------------------------------
+  function runFullSimulation() {
+    if (AppState.is_simulating) return;
+    
+    // Clear and reload baseline simulated data package
+    loadDataset(MOCK_DATASET, true);
+    
+    AppState.is_simulating = true;
+    const btn = document.getElementById('btn-run-sim');
+    const statusPanel = document.getElementById('sim-status-panel');
+    const simState = document.getElementById('sim-state');
+    const simTime = document.getElementById('sim-time');
+    const simScore = document.getElementById('sim-score');
+    const simBar = document.getElementById('sim-progress-bar');
+    
+    btn.disabled = true;
+    btn.querySelector('#btn-text').innerText = "SIMULATOR ACTIVE...";
+    statusPanel.style.display = "flex";
+    simBar.style.width = "0%";
+    simScore.innerText = "-";
+    
+    // Clear display values from pipeline cards
+    const stepCards = document.querySelectorAll('.flow-step-card');
+    stepCards.forEach(c => c.classList.remove('active', 'success'));
+    document.getElementById('step-card-5').style.display = "none";
+    
+    // Empty docks
+    document.getElementById('dock-1').innerHTML = "";
+    document.getElementById('dock-2').innerHTML = "";
+    document.getElementById('dock-3').innerHTML = "";
+    document.getElementById('dock-4').innerHTML = "";
+
+    // Execution timer simulation
+    let seconds = 0.0;
+    const timerInterval = setInterval(() => {
+      seconds += 0.1;
+      simTime.innerText = seconds.toFixed(1) + "s";
+    }, 100);
+
+    // Sequence controller
+    // STAGE 1: Parallel Generation
+    setTimeout(() => {
+      simState.innerText = "STAGE 1: PARALLEL GENERATING";
+      simState.className = "status-val active";
+      simBar.style.width = "15%";
+      
+      const card = document.getElementById('step-card-1');
+      card.classList.add('active');
+      
+      const barsContainer = document.getElementById('step-1-bars');
+      barsContainer.innerHTML = Array(20).fill().map((_, i) => 
+        `<div class="parallel-bar generating" id="sim-bar-${i}"></div>`
+      ).join('');
+
+      const dock = document.getElementById('dock-1');
+      dock.innerHTML = `<div>[0.0s] Booting thread pools for N=20 concurrent generation calls...</div>`;
+
+      // Simulating threads loading asynchronously
+      let loaded = 0;
+      const barInterval = setInterval(() => {
+        if (loaded < 20) {
+          document.getElementById(`sim-bar-${loaded}`).className = "parallel-bar completed";
+          dock.innerHTML += `<div>[${(seconds).toFixed(1)}s] Qubit sample #${String(loaded+1).padStart(2, '0')} collected from local Mistral core.</div>`;
+          dock.scrollTop = dock.scrollHeight;
+          loaded++;
+        } else {
+          clearInterval(barInterval);
+        }
+      }, 150);
+
+    }, 200);
+
+    // STAGE 2: Embedding
+    setTimeout(() => {
+      simState.innerText = "STAGE 2: SEMANTIC EMBEDDING";
+      simBar.style.width = "40%";
+      
+      document.getElementById('step-card-1').classList.add('success');
+      
+      const card = document.getElementById('step-card-2');
+      card.classList.add('active');
+      
+      const dock = document.getElementById('dock-2');
+      dock.innerHTML = `<div>[${(seconds).toFixed(1)}s] Loading all-MiniLM-L6-v2 encoder on CPU core...</div>`;
+      
+      setTimeout(() => {
+        dock.innerHTML += `<div>[${(seconds).toFixed(1)}s] Projecting 20 samples to 384-dimensional dense vectors.</div>`;
+        dock.innerHTML += `<div>[${(seconds).toFixed(1)}s] Normalizing embedding arrays for geometric space calculations.</div>`;
+        dock.scrollTop = dock.scrollHeight;
+      }, 500);
+
+    }, 3800);
+
+    // STAGE 3: Consensus Centroiding
+    setTimeout(() => {
+      simState.innerText = "STAGE 3: COMPUTING CONSENSUS";
+      simBar.style.width = "65%";
+      
+      document.getElementById('step-card-2').classList.add('success');
+      
+      const card = document.getElementById('step-card-3');
+      card.classList.add('active');
+      
+      const dock = document.getElementById('dock-3');
+      dock.innerHTML = `<div>[${(seconds).toFixed(1)}s] Building 20x20 Cosine Similarity Matrix...</div>`;
+
+      setTimeout(() => {
+        dock.innerHTML += `<div>[${(seconds).toFixed(1)}s] Calculating average similarity for each sample vector...</div>`;
+        
+        // Show actual winner score
+        const winner = AppState.samples[AppState.winner_id];
+        simScore.innerText = winner.avg_similarity.toFixed(4);
+        
+        // Populate and show winner
+        dock.innerHTML += `<div style="color:var(--win); margin-top:0.4rem;">[${(seconds).toFixed(1)}s] CONVERGENCE POINT ISOLATED!</div>`;
+        dock.innerHTML += `<div>Centroid Candidate: <strong>Sample #${String(winner.id).padStart(2,'0')}</strong> (Score: <strong>${winner.avg_similarity.toFixed(4)}</strong>)</div>`;
+        dock.innerHTML += `<div style="margin-top:0.3rem; padding: 0.5rem; background:#070b13; border:1px solid var(--border); border-radius:4px; font-size:0.65rem; color:#fff;">"${AppState.raw_winner}"</div>`;
+        dock.scrollTop = dock.scrollHeight;
+
+        // Render interactive maps immediately for tabs
+        render2DClusterMap();
+        renderSimilarityHeatmap();
+
+      }, 800);
+
+    }, 5500);
+
+    // STAGE 4: Refinement Loops
+    setTimeout(() => {
+      simState.innerText = "STAGE 4: REFINING OUTPUT";
+      simBar.style.width = "88%";
+      
+      document.getElementById('step-card-3').classList.add('success');
+      
+      const card = document.getElementById('step-card-4');
+      card.classList.add('active');
+      
+      const dock = document.getElementById('dock-4');
+      dock.innerHTML = `<div>[${(seconds).toFixed(1)}s] Routing Centroid Sample to low-temp refinement pipeline (T=0.4)...</div>`;
+
+      setTimeout(() => {
+        dock.innerHTML += `<div>[${(seconds).toFixed(1)}s] Round 1 complete. Structuring paragraphs and highlighting keywords...</div>`;
+        dock.innerHTML += `<div style="padding:0.4rem; font-size:0.65rem; background:#070b13; border:1px solid rgba(162, 89, 255, 0.1); border-radius:4px; margin-top:0.2rem; color:var(--text-muted);">${AppState.refinements[0].substring(0, 100)}...</div>`;
+        dock.scrollTop = dock.scrollHeight;
+      }, 700);
+
+      setTimeout(() => {
+        dock.innerHTML += `<div style="margin-top:0.4rem;">[${(seconds).toFixed(1)}s] Round 2 complete. Injecting analogies and verifying precision...</div>`;
+        dock.innerHTML += `<div style="padding:0.4rem; font-size:0.65rem; background:#070b13; border:1px solid rgba(5, 255, 155, 0.1); border-radius:4px; margin-top:0.2rem; color:var(--text-muted);">${AppState.refinements[1].substring(0, 100)}...</div>`;
+        dock.scrollTop = dock.scrollHeight;
+      }, 1500);
+
+    }, 8000);
+
+    // STAGE 5: Finished
+    setTimeout(() => {
+      clearInterval(timerInterval);
+      
+      simState.innerText = "COMPLETED";
+      simState.className = "status-val finished";
+      simBar.style.width = "100%";
+      
+      document.getElementById('step-card-4').classList.add('success');
+      
+      const card = document.getElementById('step-card-5');
+      card.style.display = "grid";
+      setTimeout(() => card.classList.add('active', 'success'), 50);
+
+      // Print final output
+      document.getElementById('final-output-display').innerText = AppState.final_output;
+      document.getElementById('final-stats-badge').innerText = `Score: ${AppState.samples[AppState.winner_id].avg_similarity.toFixed(4)}`;
+
+      // Reset controls
+      AppState.is_simulating = false;
+      btn.disabled = false;
+      btn.querySelector('#btn-text').innerText = "RERUN SIMULATION";
+
+    }, 10500);
+
+  }
+
+  // -------------------------------------------------------------
+  // DYNAMIC CHART RENDERING (SVG-based)
+  // -------------------------------------------------------------
+  
+  // Render 2D Vector Cluster Scatter Plot
+  function render2DClusterMap() {
+    const svg = document.getElementById('cluster-svg-elem');
+    svg.innerHTML = ''; // Clear SVG
+    
+    if (AppState.samples.length === 0) return;
+
+    // Define margins and chart bounds
+    const width = 800;
+    const height = 450;
+    const padding = 60;
+    
+    // Find min and max of coordinates to scale
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+    
+    AppState.samples.forEach(s => {
+      let [x, y] = s.coordinates || [0, 0];
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    });
+
+    // Make range symmetrical or give a buffer
+    const extendRange = (min, max) => {
+      const diff = max - min;
+      const paddingVal = diff === 0 ? 10 : diff * 0.15;
+      return [min - paddingVal, max + paddingVal];
+    };
+    
+    const [scaleMinX, scaleMaxX] = extendRange(minX, maxX);
+    const [scaleMinY, scaleMaxY] = extendRange(minY, maxY);
+
+    // Coordinate scaler helpers
+    const scaleX = (x) => padding + ((x - scaleMinX) / (scaleMaxX - scaleMinX)) * (width - 2 * padding);
+    const scaleY = (y) => height - padding - ((y - scaleMinY) / (scaleMaxY - scaleMinY)) * (height - 2 * padding);
+
+    // Draw grid axes
+    const gridG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    gridG.setAttribute('stroke', '#1f2937');
+    gridG.setAttribute('stroke-width', '1');
+    gridG.setAttribute('opacity', '0.5');
+
+    // Central axes
+    const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    xAxis.setAttribute('x1', String(padding));
+    xAxis.setAttribute('y1', String(height / 2));
+    xAxis.setAttribute('x2', String(width - padding));
+    xAxis.setAttribute('y2', String(height / 2));
+    xAxis.setAttribute('stroke-dasharray', '4 4');
+    gridG.appendChild(xAxis);
+
+    const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    yAxis.setAttribute('x1', String(width / 2));
+    yAxis.setAttribute('y1', String(padding));
+    yAxis.setAttribute('x2', String(width / 2));
+    yAxis.setAttribute('y2', String(height - padding));
+    yAxis.setAttribute('stroke-dasharray', '4 4');
+    gridG.appendChild(yAxis);
+
+    svg.appendChild(gridG);
+
+    // Draw lines connecting nodes to the centroid to show clustering
+    const connectionG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    connectionG.setAttribute('stroke', 'rgba(0, 229, 255, 0.15)');
+    connectionG.setAttribute('stroke-width', '0.75');
+    svg.appendChild(connectionG);
+
+    const winnerNode = AppState.samples.find(s => s.is_winner);
+    let winX = 0, winY = 0;
+    if (winnerNode) {
+      const [wx, wy] = winnerNode.coordinates || [0,0];
+      winX = scaleX(wx);
+      winY = scaleY(wy);
+    }
+
+    // Render nodes
+    AppState.samples.forEach((sample, idx) => {
+      const [xVal, yVal] = sample.coordinates || [0,0];
+      const cx = scaleX(xVal);
+      const cy = scaleY(yVal);
+      
+      // Draw connection line
+      if (winnerNode && !sample.is_winner) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', String(cx));
+        line.setAttribute('y1', String(cy));
+        line.setAttribute('x2', String(winX));
+        line.setAttribute('y2', String(winY));
+        connectionG.appendChild(line);
+      }
+
+      // Main Node Group
+      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      g.setAttribute('class', 'node-group');
+      
+      // Winner has distinctive glowing pulsars
+      if (sample.is_winner) {
+        const halo = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        halo.setAttribute('cx', String(cx));
+        halo.setAttribute('cy', String(cy));
+        halo.setAttribute('r', '15');
+        halo.setAttribute('fill', 'rgba(5, 255, 155, 0.15)');
+        halo.setAttribute('stroke', 'var(--win)');
+        halo.setAttribute('stroke-width', '2');
+        halo.setAttribute('class', 'node-centroid');
+        g.appendChild(halo);
+      }
+
+      const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      dot.setAttribute('cx', String(cx));
+      dot.setAttribute('cy', String(cy));
+      dot.setAttribute('r', sample.is_winner ? '8' : '6');
+      dot.setAttribute('fill', sample.is_winner ? 'var(--win)' : (sample.avg_similarity < 0.7 ? 'var(--accent-orange)' : 'var(--accent)'));
+      dot.setAttribute('stroke', '#030712');
+      dot.setAttribute('stroke-width', '1.5');
+      dot.setAttribute('class', 'node-dot');
+      g.appendChild(dot);
+
+      // Simple label
+      const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      label.setAttribute('x', String(cx));
+      label.setAttribute('y', String(cy - 12));
+      label.setAttribute('text-anchor', 'middle');
+      label.setAttribute('fill', sample.is_winner ? 'var(--win)' : 'var(--text-muted)');
+      label.setAttribute('font-family', "'Space Mono', monospace");
+      label.setAttribute('font-size', '8px');
+      label.setAttribute('font-weight', sample.is_winner ? 'bold' : 'normal');
+      label.textContent = `#${String(sample.id).padStart(2,'0')}${sample.is_winner ? ' ★' : ''}`;
+      g.appendChild(label);
+
+      // Event handlers for inspect overlay
+      g.addEventListener('mouseenter', () => {
+        const inspector = document.getElementById('cluster-inspector');
+        document.getElementById('inspect-node-id').innerText = `Sample #${String(sample.id).padStart(2, '0')} ${sample.is_winner ? ' (Consensus Centroid Winner)' : ''}`;
+        document.getElementById('inspect-node-score').innerText = `Avg Similarity: ${sample.avg_similarity.toFixed(4)}`;
+        document.getElementById('inspect-node-text').innerText = sample.text;
+        
+        if (sample.is_winner) {
+          document.getElementById('inspect-node-id').style.color = "var(--win)";
+        } else if (sample.avg_similarity < 0.7) {
+          document.getElementById('inspect-node-id').style.color = "var(--accent-orange)";
+        } else {
+          document.getElementById('inspect-node-id').style.color = "var(--accent)";
+        }
+        
+        inspector.classList.add('active');
+        dot.setAttribute('stroke', '#fff');
+        dot.setAttribute('stroke-width', '2.5');
+      });
+
+      g.addEventListener('mouseleave', () => {
+        dot.setAttribute('stroke', '#030712');
+        dot.setAttribute('stroke-width', '1.5');
+      });
+
+      svg.appendChild(g);
+    });
+  }
+
+  // Render Cosine Similarity Heatmap Grid
+  function renderSimilarityHeatmap() {
+    const svg = document.getElementById('heatmap-svg-elem');
+    svg.innerHTML = ''; // Clear SVG
+    
+    const matrix = AppState.similarity_matrix;
+    const N = matrix.length;
+    if (N === 0) return;
+
+    const cellSize = 360 / N;
+    const xOffset = 25;
+    const yOffset = 25;
+
+    // Draw Labels for Header and Y-Axis
+    const labelGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    labelGroup.setAttribute('fill', 'var(--text-dark)');
+    labelGroup.setAttribute('font-family', "'Space Mono', monospace");
+    labelGroup.setAttribute('font-size', '6.5px');
+    
+    for (let i = 0; i < N; i++) {
+      if (i % 2 === 0 || N <= 10) { // Avoid crowding text labels
+        // X label
+        const xText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        xText.setAttribute('x', String(xOffset + i * cellSize + cellSize / 2));
+        xText.setAttribute('y', '15');
+        xText.setAttribute('text-anchor', 'middle');
+        xText.textContent = String(i + 1).padStart(2, '0');
+        labelGroup.appendChild(xText);
+
+        // Y label
+        const yText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        yText.setAttribute('x', '15');
+        yText.setAttribute('y', String(yOffset + i * cellSize + cellSize / 2 + 2.5));
+        yText.setAttribute('text-anchor', 'end');
+        yText.textContent = String(i + 1).padStart(2, '0');
+        labelGroup.appendChild(yText);
+      }
+    }
+    svg.appendChild(labelGroup);
+
+    // Color gradient selector based on similarity strength
+    const getHeatmapColor = (sim) => {
+      // Scale cosine sim [0.3, 1.0] -> HSL representation
+      // We want a gradient: Low = dark purple, Mid = cyan, High = glowing green
+      if (sim >= 0.85) {
+        // Blend from cyan (180deg) to green (145deg)
+        const t = (sim - 0.85) / 0.15;
+        const hue = 180 - t * 35;
+        const sat = 85 + t * 15;
+        const lit = 45 + t * 5;
+        return `hsl(${hue}, ${sat}%, ${lit}%)`;
+      } else {
+        // Blend from dark violet (270deg) to cyan (180deg)
+        const t = Math.max(0, (sim - 0.35) / 0.5);
+        const hue = 270 - t * 90;
+        const sat = 70 + t * 15;
+        const lit = 15 + t * 30;
+        return `hsl(${hue}, ${sat}%, ${lit}%)`;
+      }
+    };
+
+    // Render cells
+    const cellGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    
+    for (let r = 0; r < N; r++) {
+      for (let c = 0; c < N; c++) {
+        const val = matrix[r][c];
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', String(xOffset + c * cellSize));
+        rect.setAttribute('y', String(yOffset + r * cellSize));
+        rect.setAttribute('width', String(cellSize - 1));
+        rect.setAttribute('height', String(cellSize - 1));
+        rect.setAttribute('fill', getHeatmapColor(val));
+        rect.setAttribute('class', 'heatmap-cell');
+        
+        // Winner rows get subtle golden dashed borders or accents
+        if (r === AppState.winner_id && c === AppState.winner_id) {
+          rect.setAttribute('stroke', 'var(--win)');
+          rect.setAttribute('stroke-width', '1');
+        }
+
+        // Cell hover inspectors
+        rect.addEventListener('mouseenter', () => {
+          document.getElementById('comp-label-1').innerText = `SAMPLE #${String(r+1).padStart(2,'0')}`;
+          document.getElementById('comp-score-1').innerText = `Avg Sim: ${AppState.samples[r].avg_similarity.toFixed(4)}`;
+          document.getElementById('comp-text-1').innerText = AppState.samples[r].text;
+
+          document.getElementById('comp-label-2').innerText = `SAMPLE #${String(c+1).padStart(2,'0')}`;
+          document.getElementById('comp-score-2').innerText = `Avg Sim: ${AppState.samples[c].avg_similarity.toFixed(4)}`;
+          document.getElementById('comp-text-2').innerText = AppState.samples[c].text;
+
+          document.getElementById('comp-pairwise-sim').innerText = val.toFixed(4);
+          
+          if (r === c) {
+            document.getElementById('comp-pairwise-sim').style.color = "var(--win)";
+          } else if (val >= 0.8) {
+            document.getElementById('comp-pairwise-sim').style.color = "var(--accent)";
+          } else {
+            document.getElementById('comp-pairwise-sim').style.color = "var(--accent-orange)";
+          }
+        });
+
+        cellGroup.appendChild(rect);
+      }
+    }
+    svg.appendChild(cellGroup);
+  }
+
+</script>
+</body>
+</html>

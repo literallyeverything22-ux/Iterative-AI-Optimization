@@ -1,0 +1,101 @@
+{
+  "prompt": "Explain gravity simply",
+  "model": "mistral",
+  "n_samples": 5,
+  "refine_rounds": 1,
+  "winner_id": 0,
+  "raw_winner": "[Generation Error] Failed to generate sample 1 from model 'mistral'.",
+  "refinements": [
+    "[Refinement Error] Failed to execute round 1 refinement."
+  ],
+  "final_output": "[Generation Error] Failed to generate sample 1 from model 'mistral'.",
+  "samples": [
+    {
+      "id": 1,
+      "text": "[Generation Error] Failed to generate sample 1 from model 'mistral'.",
+      "avg_similarity": 0.9580012559890747,
+      "is_winner": true,
+      "coordinates": [
+        44.510650634765625,
+        -36.117279052734375
+      ]
+    },
+    {
+      "id": 2,
+      "text": "[Generation Error] Failed to generate sample 2 from model 'mistral'.",
+      "avg_similarity": 0.9529115557670593,
+      "is_winner": false,
+      "coordinates": [
+        80.0,
+        16.234222412109375
+      ]
+    },
+    {
+      "id": 3,
+      "text": "[Generation Error] Failed to generate sample 3 from model 'mistral'.",
+      "avg_similarity": 0.9546526074409485,
+      "is_winner": false,
+      "coordinates": [
+        -12.664306640625,
+        68.65316772460938
+      ]
+    },
+    {
+      "id": 4,
+      "text": "[Generation Error] Failed to generate sample 4 from model 'mistral'.",
+      "avg_similarity": 0.9515001177787781,
+      "is_winner": false,
+      "coordinates": [
+        -69.91236114501953,
+        80.0
+      ]
+    },
+    {
+      "id": 5,
+      "text": "[Generation Error] Failed to generate sample 5 from model 'mistral'.",
+      "avg_similarity": 0.9499582052230835,
+      "is_winner": false,
+      "coordinates": [
+        -80.0,
+        -80.0
+      ]
+    }
+  ],
+  "similarity_matrix": [
+    [
+      1.0000005960464478,
+      0.9614022970199585,
+      0.9471742510795593,
+      0.9361122846603394,
+      0.9453167915344238
+    ],
+    [
+      0.9614022970199585,
+      1.0,
+      0.9428529739379883,
+      0.9344531297683716,
+      0.9258496165275574
+    ],
+    [
+      0.9471742510795593,
+      0.9428529739379883,
+      0.9999998211860657,
+      0.9457735419273376,
+      0.9374620914459229
+    ],
+    [
+      0.9361122846603394,
+      0.9344531297683716,
+      0.9457735419273376,
+      0.9999995231628418,
+      0.9411622285842896
+    ],
+    [
+      0.9453167915344238,
+      0.9258496165275574,
+      0.9374620914459229,
+      0.9411622285842896,
+      1.0000004768371582
+    ]
+  ]
+}
