@@ -317,6 +317,7 @@ class PipelineHTTPRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Private-Network", "true")
 
     def do_OPTIONS(self):
         self.send_response(200)
@@ -328,7 +329,24 @@ class PipelineHTTPRequestHandler(BaseHTTPRequestHandler):
         pass
 
     def do_GET(self):
-        if self.path == "/api/status":
+        if self.path in ["/", "/index.html", "/visualizer", "/pipeline_visual.html"]:
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self._send_cors_headers()
+            self.end_headers()
+            
+            project_root = os.path.dirname(os.path.abspath(__file__))
+            html_path = os.path.join(project_root, "pipeline_visual.html")
+            if os.path.exists(html_path):
+                try:
+                    with open(html_path, "r", encoding="utf-8") as f:
+                        content = f.read()
+                    self.wfile.write(content.encode("utf-8"))
+                except Exception as e:
+                    self.wfile.write(f"Error reading pipeline_visual.html: {e}".encode("utf-8"))
+            else:
+                self.wfile.write(b"Error: pipeline_visual.html not found in project root.")
+        elif self.path == "/api/status":
             self.send_response(200)
             self._send_cors_headers()
             self.send_header("Content-Type", "application/json")

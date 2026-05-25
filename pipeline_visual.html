@@ -1679,6 +1679,8 @@
 </div>
 
 <script>
+  const API_BASE = window.location.origin.startsWith('file') ? 'http://127.0.0.1:8000' : window.location.origin;
+
   // Global Application State
   const AppState = {
     prompt: "Explain Quantum Computing simply.",
@@ -1864,7 +1866,7 @@
     const runBtn = document.getElementById('btn-run-sim');
     const btnText = document.getElementById('btn-text');
     
-    fetch('http://127.0.0.1:8000/api/status')
+    fetch(`${API_BASE}/api/status`)
       .then(response => {
         if (!response.ok) throw new Error();
         return response.json();
@@ -2565,7 +2567,7 @@
     }, 450);
 
     // Make the API call to Python server
-    fetch('http://127.0.0.1:8000/api/run', {
+    fetch(`${API_BASE}/api/run`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
