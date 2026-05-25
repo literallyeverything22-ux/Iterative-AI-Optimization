@@ -1953,42 +1953,139 @@
 
   // Generates randomized realistic data sets for custom untracked prompts entered by the user
   function createDynamicPromptDataset(prompt) {
-    // Generate a new custom mock dataset on the fly
-    const winner_id = 0;
-    const raw_winner = `Stochastic consensus centroid isolated: An optimized, comprehensive explanation for your query: "${prompt}". Integrates dense sentence clusters and filters noise.`;
-    const refinements = [
+    const promptLower = prompt.toLowerCase();
+    
+    // Default Fallback values
+    let winner_id = 0;
+    let raw_winner = `Stochastic consensus centroid isolated: An optimized, comprehensive explanation for your query: "${prompt}". Integrates dense sentence clusters and filters noise.`;
+    let refinements = [
       `[Round 1 Refined output]:\n\nHere is an improved draft: ${raw_winner} The structure has been polished to present key analogies and clear terminology.`,
       `[Round 2 Refined output - Final Optimized Answer]:\n\nHere is the finalized polished consensus: ${raw_winner} \n\nThrough parallel sampling and high-dimensional vector analysis, this output represents the mathematical centroid of 20 concurrent generations. Outliers have been successfully filtered, and temperature loops have optimized flow, readability, and structural precision.`
     ];
-    
-    const samples = [];
-    // 15 high-sim
-    for (let i = 0; i < 15; i++) {
-      let isWinner = (i === winner_id);
-      samples.push({
-        id: i + 1,
-        text: isWinner ? raw_winner : `Alternative generation candidate discussing specific parameters of "${prompt}" (Generation path #${i+1}).`,
-        avg_similarity: isWinner ? 0.8950 : 0.7900 + (Math.random() * 0.08),
-        is_winner: isWinner,
-        coordinates: [
-          (Math.random() - 0.5) * 35,
-          (Math.random() - 0.5) * 35
-        ]
-      });
-    }
-    // 5 outliers
-    const outlines = [
+    let final_output = refinements[1];
+    let keywords = ["consensus", "optimized", "precision", "centroid", "stochastic"];
+    let outliers = [
       "Here is a short, abstract poem about the concept.",
       "An overly complex, dense mathematical proof addressing technical details.",
       "A three-word, overly brief explanation.",
       "A highly hallucinated answer claiming impossible scientific metrics.",
       "An off-topic historical discourse starting with 18th-century infrastructure."
     ];
+
+    // Category 1: Black Holes / Space / Gravity / Astronomy
+    if (promptLower.includes("black hole") || promptLower.includes("gravity") || promptLower.includes("space") || promptLower.includes("analogy") || promptLower.includes("analogies")) {
+      winner_id = 1;
+      raw_winner = "Think of space as a giant, stretched trampoline. If you place a heavy bowling ball in the middle, it creates a deep slope. If you roll a marble nearby, it orbits the ball, spiraling inward. A black hole is like squeezing that entire massive bowling ball into a microscopic grain of sand. It creates a well so steep that once anything—even light—slips past the event horizon boundary, it can never climb back out.";
+      refinements = [
+        "Imagine the universe as a vast, stretched fabric—like a massive trampoline. A normal star is like a bowling ball resting on that fabric, creating a gentle slope that marble-like planets roll around.\n\nNow, imagine squeezing that entire bowling ball into a microscopic grain of sand while keeping its massive weight. The fabric of space doesn't just bend; it tears, creating an infinitely deep funnel. This is a Black Hole.\n\nThe boundary of this funnel is the Event Horizon, the cosmic 'point of no return.' Once an object crosses this boundary, the downward slope becomes steeper than the speed of light itself. Since nothing can travel faster than light, nothing can climb back out.",
+        "Imagine the universe as a vast, stretched fabric—like a massive trampoline. A normal star is like a bowling ball resting on that fabric, creating a gentle slope that marble-like planets roll around.\n\nNow, imagine squeezing that entire bowling ball into a microscopic grain of sand while keeping its massive weight. The fabric of space doesn't just bend; it tears, creating an infinitely deep funnel. This is a **Black Hole**.\n\nThe boundary of this funnel is the **Event Horizon**, the cosmic 'point of no return.' Once an object—whether a spaceship, an asteroid, or even a beam of light—crosses this boundary, the downward slope becomes steeper than the speed of light itself. Since nothing can travel faster than light, nothing can climb back out.\n\nAt the very center lies the **Singularity**, a point where all that colossal mass is crushed into absolute zero volume, bringing our classical laws of physics to a screeching halt."
+      ];
+      final_output = refinements[1];
+      keywords = ["trampoline", "bowling ball", "event horizon", "singularity", "funnel"];
+      outliers = [
+        "In the quiet dark of the starless night, / Sucking in the paths of ancient light, / A gravity so strong, a stellar ghost, / Feasting on the matter it loves most.",
+        "The Schwarzschild radius Rs is equal to 2GM/c^2. Setting the escape velocity equal to c, we get the event horizon of a non-rotating spherically symmetric mass distribution, governed by the Schwarzschild metric ds^2 = -(1-2GM/c^2 r)dt^2 + ...",
+        "A black hole is just a giant space vacuum cleaner that cleans up space dust.",
+        "Black holes are actually wormholes that lead to a vacuum cleaner factory in another dimension. If you fall in, you are compressed and turned into dustbags.",
+        "The history of telescopes begins in 1608 with Hans Lippershey, a Dutch spectaclemaker. He applied for a patent for a device that could make far objects appear close..."
+      ];
+    }
+    
+    // Category 2: Programming / Coding / Rust / Python / JavaScript
+    else if (promptLower.includes("code") || promptLower.includes("programming") || promptLower.includes("rust") || promptLower.includes("python") || promptLower.includes("javascript") || promptLower.includes("software")) {
+      winner_id = 0;
+      raw_winner = "A high-performance system programming language focuses on safety, speed, and concurrency. By replacing garbage collection with a strict borrow checker compile model, it guarantees memory safety at compile-time without runtime overhead.";
+      refinements = [
+        "Modern systems programming has evolved. Standard languages like C++ offer speed but suffer from memory leakage and segfault risks, while higher languages like Java use slow garbage collectors. By introducing a strict ownership model governed by a compile-time 'borrow checker', modern languages like Rust guarantee thread-safe operations and zero runtime memory overhead.",
+        "Modern systems programming has evolved.\n\nTraditionally, developers faced a trade-off: use low-level languages like C/C++ for raw speed and suffer from dangerous memory leaks and segfaults, or use high-level languages like Java/Go and suffer from slow garbage collection pauses.\n\nBy introducing a strict **Ownership and Borrowing Model** checked at compile-time, modern languages like **Rust** solve this. You get maximum execution speed, zero memory leak vulnerabilities, and robust multi-threaded concurrency—all compiled cleanly into a single high-performance binary."
+      ];
+      final_output = refinements[1];
+      keywords = ["ownership", "concurrency", "garbage collection", "borrow checker", "safety"];
+      outliers = [
+        "In brackets bound and semicolons spun, / The system thread is safely run.",
+        "Let us define a Turing machine as a 7-tuple M = (Q, Sigma, Gamma, delta, q0, B, F) where Q is a finite set of states, Sigma is a finite set of input symbols...",
+        "Coding is just typing words into a computer really fast so it does stuff.",
+        "Programming works because the computer has tiny trolls inside the CPU that read your text and paint the screen according to what you wrote.",
+        "The history of keyboards begins with the typewriter in 1868, invented by Christopher Latham Sholes. The QWERTY layout was designed to prevent jamming..."
+      ];
+    }
+
+    // Category 3: Biology / Cell / Science / Photosynthesis / DNA
+    else if (promptLower.includes("cell") || promptLower.includes("biology") || promptLower.includes("science") || promptLower.includes("dna") || promptLower.includes("respiration") || promptLower.includes("photosynthesis")) {
+      winner_id = 1;
+      raw_winner = "Cells produce energy using cellular respiration. Mitochondria take glucose and oxygen and convert them into ATP, releasing carbon dioxide and water as byproducts. This keeps our cellular machinery functioning.";
+      refinements = [
+        "Cellular respiration is the combustion engine of life. Inside your cells, tiny power plants called mitochondria extract energy from the food you eat (glucose) in the presence of oxygen. This complex chemical cascade synthesizes ATP (adenosine triphosphate), the global energy currency of biological organisms.",
+        "Cellular respiration is the ultimate combustion engine of biological life.\n\nInside almost every cell of your body, tiny microscopic powerhouses called **Mitochondria** perform a marvelous chemical dance. They take the food you eat (glucose) and the air you breathe (oxygen) and run them through a molecular factory.\n\nThe final product is **ATP (Adenosine Triphosphate)** — the absolute universal energy currency of cellular life. ATP acts like a fully charged rechargeable battery, powering everything from muscle contractions to active neural signaling, while cleanly releasing carbon dioxide and water as simple byproducts."
+      ];
+      final_output = refinements[1];
+      keywords = ["mitochondria", "glucose", "ATP", "respiration", "chemical"];
+      outliers = [
+        "Tiny cell, unseen by eyes, / Under glass, a grand surprise. / Spinning energy of light, / Breathing in the cosmic night.",
+        "The Krebs cycle, also known as the citric acid cycle, begins with the condensation of acetyl-CoA with oxaloacetate to form citrate. This reaction is catalyzed by citrate synthase. Citrate is then isomerized into isocitrate by aconitase...",
+        "Cellular respiration is just breathing but inside your cells really fast.",
+        "Cells produce energy because they have small nuclear fusion reactors inside them that split hydrogen atoms to create glowing biological lightning.",
+        "The history of microscopes dates back to 1590, when Zacharias Janssen, a Dutch spectaclemaker, created the first compound microscope by placing lenses..."
+      ];
+    }
+
+    // Category 4: AI / Artificial Intelligence / Neural / LLM / Machine Learning
+    else if (promptLower.includes("ai") || promptLower.includes("artificial intelligence") || promptLower.includes("neural") || promptLower.includes("llm") || promptLower.includes("machine learning") || promptLower.includes("gpt")) {
+      winner_id = 2;
+      raw_winner = "Large Language Models work by predicting the next word in a sequence. By processing billions of text parameters through a Transformer neural network, they build a statistical model of language, enabling them to generate highly coherent responses based on input prompts.";
+      refinements = [
+        "Generative AI models aren't databases; they are massive statistical prediction engines. Utilizing a multi-layer neural network architecture called a Transformer, they map words into a high-dimensional vector space. By calculating semantic coordinates, they predict the next most logical word token based on prompt context.",
+        "Generative AI and Large Language Models (LLMs) aren't search engines; they are massive **Statistical Probability Maps**.\n\nUtilizing a revolutionary neural network architecture called a **Transformer**, LLMs convert words into mathematical coordinates inside a high-dimensional vector space. Words with similar meanings (like 'cat' and 'kitten') sit close to one another in this space.\n\nWhen you type a prompt, the model uses these coordinates to calculate the most logically consistent next word token, one-by-one. It is mathematically predicting the path of highest conceptual convergence, giving the illusion of true understanding."
+      ];
+      final_output = refinements[1];
+      keywords = ["Transformer", "statistics", "vector space", "probability", "neural network"];
+      outliers = [
+        "Silicon mind of math and code, / Walking down the logic road. / Talking back in human keys, / Processing philosophies.",
+        "Let us formulate a single self-attention layer. Given an input matrix X of dimension N x d, we project X into Query, Key, and Value matrices Q = X * Wq, K = X * Wk, V = X * Wv. The output is computed as Attention(Q, K, V) = softmax(Q * K^T / sqrt(dk)) * V...",
+        "AI is just a bunch of if-else statements written by smart coders in Silicon Valley.",
+        "AI works by trapping actual human souls inside server farms. When you ask GPT a question, a trapped soul is forced to type the answer to you.",
+        "The history of silicon begins with Jöns Jacob Berzelius, a Swedish chemist who discovered silicon in 1823 by heating potassium with silicon tetrafluoride..."
+      ];
+    }
+
+    // Category 5: General Default Fallback (If no keywords match) - A very clean generic response
+    else {
+      winner_id = 1;
+      raw_winner = `Stochastic consensus centroid isolated: A highly focused, mathematically optimized response converged for your query: "${prompt}". Outliers and formatting noise have been successfully filtered.`;
+      refinements = [
+        `Here is a highly refined consensus draft addressing: "${prompt}". By running parallel temperature-diverse generation loops, we extracted the most representative conceptual core, enhancing paragraph structure, terminology clarity, and flow.`,
+        `Here is the finalized polished consensus output for your query:\n\n**"${prompt}"**\n\nBy executing parallel sampling across 20 independent generation paths, we mathematically mapped the conceptual core of this topic. Outlying responses (including overly poetic, overly technical, and chatty fallbacks) were isolated and removed.\n\nThis final answer has been polished across 2 refinement loops to prioritize absolute clarity, structural precision, and educational depth for your custom request.`
+      ];
+      final_output = refinements[1];
+    }
+
+    // Build the dynamic samples array
+    const samples = [];
+    // 15 high-sim
+    for (let i = 0; i < 15; i++) {
+      let isWinner = (i === winner_id);
+      let text = isWinner ? raw_winner : `Alternative generation candidate discussing specific parameters of "${prompt}" (Generation path #${i+1}).`;
+      
+      // Coordinates clumped in a dense cluster near center
+      let cx = (Math.random() - 0.5) * 35;
+      let cy = (Math.random() - 0.5) * 35;
+      if (isWinner) { cx = -3; cy = 2; }
+      
+      samples.push({
+        id: i + 1,
+        text: text,
+        avg_similarity: isWinner ? 0.9100 : 0.7900 + (Math.random() * 0.08),
+        is_winner: isWinner,
+        coordinates: [cx, cy]
+      });
+    }
+
+    // 5 outliers
     for (let i = 0; i < 5; i++) {
       let angle = (i * Math.PI * 2) / 5;
       samples.push({
         id: 16 + i,
-        text: `[Outlier Sample #${16+i}] ${outlines[i]}`,
+        text: `[Outlier Sample #${16+i}] ${outliers[i]}`,
         avg_similarity: 0.4200 + (Math.random() * 0.18),
         is_winner: false,
         coordinates: [
@@ -2006,7 +2103,7 @@
       winner_id: winner_id,
       raw_winner: raw_winner,
       refinements: refinements,
-      final_output: refinements[1],
+      final_output: final_output,
       samples: samples,
       similarity_matrix: generateMockMatrix(samples)
     };
