@@ -1711,6 +1711,7 @@
     final_output: "",
     is_simulating: false,
     source: "SIMULATOR", // or "LIVE_LOAD"
+    server_mode: "SIMULATOR", // "SIMULATOR" or "LIVE"
     local_models: []
   };
 
@@ -1948,7 +1949,8 @@
           }
         }
       })
-      .catch(() => {
+      .catch(err => {
+        console.error("Server connection check failed:", err);
         if (AppState.server_mode !== "SIMULATOR") {
           backendBadge.innerText = "PIPELINE SERVER: OFFLINE (SIMULATOR MODE)";
           backendBadge.className = "connection-badge offline";
@@ -1967,7 +1969,7 @@
   }
 
   // Initialize App on Load
-  window.addEventListener('DOMContentLoaded', () => {
+  function initializeApp() {
     // Show PNA banner if accessed via file://
     if (window.location.protocol === 'file:') {
       const banner = document.getElementById('pna-warning-banner');
@@ -2092,7 +2094,13 @@
         }
       });
     }
-  });
+  }
+
+  if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', initializeApp);
+  } else {
+    initializeApp();
+  }
 
   // -------------------------------------------------------------
   // OLLAMA AUTO-DETECTION FUNCTION
