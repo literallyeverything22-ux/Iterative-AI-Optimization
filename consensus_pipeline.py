@@ -31,6 +31,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import argparse
 import sys
 import json
+import os
+import re
 
 # ── Config ────────────────────────────────────────────────────────────────────
 DEFAULT_MODEL      = "mistral"          # change to any ollama model
@@ -225,6 +227,22 @@ def export_run_data(filepath: str, prompt: str, model: str, outputs: list[str],
     print(f"      Run data exported successfully!")
 
 
+def sanitize_filename(prompt: str) -> str:
+    """Convert prompt to a safe, clean filename for saving run data."""
+    # Strip whitespace
+    s = prompt.strip()
+    # Remove any non-alphanumeric characters, except spaces and hyphens
+    s = re.sub(r'[^\w\s-]', '', s)
+    # Replace spaces and hyphens with underscores
+    s = re.sub(r'[\s-]+', '_', s)
+    # Cap length at 60 characters to prevent overly long filenames
+    s = s[:60].strip('_')
+    # If empty, use fallback
+    if not s:
+        s = "query_run"
+    return f"{s}.json"
+
+
 def run_pipeline(prompt: str, model: str = DEFAULT_MODEL,
                  n: int = N_GENERATIONS, refine: int = REFINE_ROUNDS,
                  workers: int = 4, clustering: str = "average",
@@ -263,6 +281,26 @@ def run_pipeline(prompt: str, model: str = DEFAULT_MODEL,
     print(f"{'='*60}")
     print(final)
     print(f"{'='*60}\n")
+
+    # Always save run data to a folder called 'queries' in the project root
+    project_root = os.path.dirname(os.path.abspath(__file__))
+    queries_dir = os.path.join(project_root, "queries")
+    if not os.path.exists(queries_dir):
+        try:
+            os.makedirs(queries_dir)
+            print(f"      Created 'queries/' directory in project root.")
+        except Exception as e:
+            print(f"[Warning] Failed to create 'queries' directory: {e}")
+            
+    if os.path.exists(queries_dir):
+        filename = sanitize_filename(prompt)
+        auto_export_path = os.path.join(queries_dir, filename)
+        try:
+            export_run_data(auto_export_path, prompt, model, outputs, embeddings,
+                            sim_matrix, avg_similarities, winner_idx,
+                            refinements, final)
+        except Exception as e:
+            print(f"[Warning] Failed to auto-save run data to '{auto_export_path}': {e}")
 
     if export_path:
         export_run_data(export_path, prompt, model, outputs, embeddings,
