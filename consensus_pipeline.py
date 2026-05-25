@@ -33,6 +33,7 @@ import sys
 import json
 import os
 import re
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 
 # ── Config ────────────────────────────────────────────────────────────────────
 DEFAULT_MODEL      = "mistral"          # change to any ollama model
@@ -311,25 +312,151 @@ def run_pipeline(prompt: str, model: str = DEFAULT_MODEL,
     return final
 
 
+class PipelineHTTPRequestHandler(BaseHTTPRequestHandler):
+    def _send_cors_headers(self):
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self._send_cors_headers()
+        self.end_headers()
+
+    def log_message(self, format, *args):
+        # Silence request log printouts to keep terminal logs clean and readable!
+        pass
+
+    def do_GET(self):
+        if self.path == "/api/status":
+            self.send_response(200)
+            self._send_cors_headers()
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            
+            try:
+                res = ollama.list()
+                models_info = getattr(res, 'models', []) or (res.get("models", []) if hasattr(res, 'get') else [])
+                models = [getattr(m, 'model', getattr(m, 'name', '')) for m in models_info]
+                models = [name for name in models if name]
+                ollama_status = "online"
+            except Exception as e:
+                models = []
+                ollama_status = "offline"
+                
+            self.wfile.write(json.dumps({
+                "status": "connected",
+                "ollama_status": ollama_status,
+                "models": models
+            }).encode("utf-8"))
+        else:
+            self.send_response(404)
+            self._send_cors_headers()
+            self.end_headers()
+
+    def do_POST(self):
+        if self.path == "/api/run":
+            try:
+                content_length = int(self.headers["Content-Length"])
+                post_data = self.rfile.read(content_length)
+                params = json.loads(post_data.decode("utf-8"))
+                
+                prompt = params.get("prompt", "")
+                model = params.get("model", DEFAULT_MODEL)
+                n = params.get("n", N_GENERATIONS)
+                refine = params.get("refine", REFINE_ROUNDS)
+                clustering = params.get("clustering", "average")
+                workers = params.get("workers", 4)
+                
+                if not prompt:
+                    self.send_response(400)
+                    self._send_cors_headers()
+                    self.send_header("Content-Type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"error": "Prompt is required"}).encode("utf-8"))
+                    return
+                
+                print(f"\n[API Server] Triggering live consensus run for prompt: '{prompt}'...")
+                
+                project_root = os.path.dirname(os.path.abspath(__file__))
+                queries_dir = os.path.join(project_root, "queries")
+                if not os.path.exists(queries_dir):
+                    os.makedirs(queries_dir)
+                    
+                filename = sanitize_filename(prompt)
+                filepath = os.path.join(queries_dir, filename)
+                
+                # Execute pipeline (this will also automatically save it)
+                run_pipeline(
+                    prompt=prompt,
+                    model=model,
+                    n=n,
+                    refine=refine,
+                    workers=workers,
+                    clustering=clustering,
+                    export_path=filepath
+                )
+                
+                # Read the saved file and return it
+                with open(filepath, "r", encoding="utf-8") as f:
+                    run_data = json.load(f)
+                    
+                self.send_response(200)
+                self._send_cors_headers()
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps(run_data).encode("utf-8"))
+                
+            except Exception as e:
+                print(f"[API Server Error] {e}")
+                self.send_response(500)
+                self._send_cors_headers()
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+        else:
+            self.send_response(404)
+            self._send_cors_headers()
+            self.end_headers()
+
+
 # ── CLI entry point ───────────────────────────────────────────────────────────
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Consensus Sampling Pipeline")
-    parser.add_argument("prompt",  type=str, help="The task or question to optimise")
+    parser.add_argument("prompt",  type=str, nargs="?", default=None, help="The task or question to optimise (optional if running --serve)")
     parser.add_argument("--model", type=str, default=DEFAULT_MODEL, help="Ollama model name")
     parser.add_argument("--n",     type=int, default=N_GENERATIONS,  help="Number of samples")
     parser.add_argument("--refine",type=int, default=REFINE_ROUNDS,  help="Refinement rounds")
     parser.add_argument("--workers", type=int, default=4, help="Number of parallel workers for Ollama generation")
     parser.add_argument("--clustering", type=str, choices=["average", "dbscan"], default="average", help="Clustering method for consensus")
     parser.add_argument("--export", type=str, default=None, help="Filepath to export run metadata JSON for visualizer")
+    parser.add_argument("--serve", action="store_true", help="Start local lightweight HTTP API server for UI dashboard connection")
+    parser.add_argument("--port", type=int, default=8000, help="Port to run the HTTP API server on")
     args = parser.parse_args()
 
-    result = run_pipeline(
-        prompt=args.prompt,
-        model=args.model,
-        n=args.n,
-        refine=args.refine,
-        workers=args.workers,
-        clustering=args.clustering,
-        export_path=args.export
-    )
-    sys.exit(0)
+    if args.serve:
+        print("=" * 60)
+        print(f"  STARTING CONSENSUS SAMPLING API SERVER")
+        print(f"  Listening on: http://127.0.0.1:{args.port}")
+        print(f"  Queries directory: {os.path.join(os.path.dirname(os.path.abspath(__file__)), 'queries')}")
+        print("=" * 60)
+        server = ThreadingHTTPServer(("127.0.0.1", args.port), PipelineHTTPRequestHandler)
+        try:
+            server.serve_forever()
+        except KeyboardInterrupt:
+            print("\nShutting down Consensus API server...")
+            server.server_close()
+            sys.exit(0)
+    else:
+        if not args.prompt:
+            parser.error("the following arguments are required: prompt (or run with --serve)")
+        result = run_pipeline(
+            prompt=args.prompt,
+            model=args.model,
+            n=args.n,
+            refine=args.refine,
+            workers=args.workers,
+            clustering=args.clustering,
+            export_path=args.export
+        )
+        sys.exit(0)

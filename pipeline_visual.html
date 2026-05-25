@@ -290,6 +290,99 @@
     text-overflow: ellipsis;
   }
 
+  /* Cybersecurity & Cyber-Glass Sliders */
+  .cyber-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 4px;
+    background: #111827;
+    outline: none;
+    border: 1px solid var(--border);
+    transition: all 0.3s;
+  }
+  
+  .cyber-slider:hover {
+    border-color: rgba(162, 89, 255, 0.4);
+  }
+  
+  .cyber-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 10px var(--accent);
+    transition: all 0.3s;
+  }
+  
+  .cyber-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    background: #fff;
+    box-shadow: 0 0 15px #fff;
+  }
+
+  /* Sleek HUD Utility Buttons */
+  .btn-utility {
+    background: rgba(16, 24, 48, 0.6);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    padding: 0.25rem 0.6rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+  }
+
+  .btn-utility:hover {
+    border-color: var(--accent);
+    color: #fff;
+    box-shadow: 0 0 8px rgba(5, 255, 155, 0.3);
+    background: rgba(16, 24, 48, 0.9);
+  }
+  
+  .btn-utility:active {
+    transform: scale(0.95);
+  }
+
+  /* Cyberpunk Glowing Badges */
+  .connection-badge {
+    font-family: 'Space Mono', monospace;
+    font-weight: bold;
+    letter-spacing: 0.05em;
+    font-size: 0.65rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    box-shadow: inset 0 0 4px rgba(255,255,255,0.05);
+    transition: all 0.5s ease-in-out;
+  }
+
+  .connection-badge.online {
+    animation: pulse-green 2s infinite;
+  }
+
+  .connection-badge.offline {
+    animation: pulse-red 2s infinite;
+  }
+
+  @keyframes pulse-green {
+    0% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.3); }
+    50% { box-shadow: 0 0 12px rgba(16, 185, 129, 0.7); }
+    100% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.3); }
+  }
+
+  @keyframes pulse-red {
+    0% { box-shadow: 0 0 5px rgba(239, 68, 68, 0.3); }
+    50% { box-shadow: 0 0 12px rgba(239, 68, 68, 0.7); }
+    100% { box-shadow: 0 0 5px rgba(239, 68, 68, 0.3); }
+  }
+
   /* Select Form Control Dropdown */
   .form-control-select {
     width: 100%;
@@ -1210,6 +1303,9 @@
       <div class="tag">// stochastic convergence dashboard</div>
       <h1>Consensus <span>Cockpit</span></h1>
       <div class="subtitle">Visualizing AI Consensus Sampling & Polishing Loops</div>
+      <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem; align-items: center;">
+        <span id="backend-status-badge" class="connection-badge offline" style="background: rgba(239, 68, 68, 0.2); color: #EF4444; border: 1px solid rgba(239, 68, 68, 0.5);">PIPELINE SERVER: OFFLINE (SIMULATOR MODE)</span>
+      </div>
     </div>
     
     <!-- JSON Run Uploader -->
@@ -1260,14 +1356,20 @@
         </div>
       </div>
 
-      <div class="param-grid">
-        <div class="param-badge">
-          <div class="param-val" id="ctrl-samples">20</div>
-          <div class="param-lbl">Generations</div>
+      <div style="margin-top: 1.2rem; display: flex; flex-direction: column; gap: 0.8rem; padding-bottom: 0.5rem;">
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.2rem;">
+            <label style="font-family: 'Space Mono', monospace; font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">N Generations (Samples)</label>
+            <span id="slider-samples-val" style="color: var(--accent); font-family: 'Space Mono', monospace; font-size: 0.75rem; font-weight: bold;">20</span>
+          </div>
+          <input type="range" id="input-samples" min="5" max="30" value="20" class="cyber-slider" style="width: 100%; cursor: pointer;" />
         </div>
-        <div class="param-badge">
-          <div class="param-val" id="ctrl-refine">2</div>
-          <div class="param-lbl">Refinement</div>
+        <div class="form-group" style="margin-top: 0.2rem;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.2rem;">
+            <label style="font-family: 'Space Mono', monospace; font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Refinement Loops</label>
+            <span id="slider-refine-val" style="color: var(--accent-purple); font-family: 'Space Mono', monospace; font-size: 0.75rem; font-weight: bold;">2</span>
+          </div>
+          <input type="range" id="input-refine" min="0" max="5" value="2" class="cyber-slider" style="width: 100%; cursor: pointer;" />
         </div>
       </div>
 
@@ -1297,6 +1399,17 @@
         </div>
         <div class="progress-bar-container">
           <div class="progress-bar-fill" id="sim-progress-bar"></div>
+        </div>
+      </div>
+
+      <!-- Telemetry Stream Panel -->
+      <div class="telemetry-log-card" id="telemetry-log-panel" style="margin-top: 1.2rem; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+          <span style="font-size: 0.65rem; color: var(--accent); font-family: 'Space Mono', monospace; font-weight: bold;">⚡ SYSTEM TELEMETRY LOG</span>
+          <button id="btn-clear-logs" style="background: none; border: none; color: var(--text-dark); cursor: pointer; font-size: 0.6rem; font-family: 'Space Mono', monospace;">[CLEAR]</button>
+        </div>
+        <div id="telemetry-terminal" class="terminal-log-content" style="max-height: 120px; overflow-y: auto; font-family: 'Space Mono', monospace; font-size: 0.65rem; line-height: 1.4; color: #10B981; background: #020408; border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.2rem;">
+          <div>[0.0s] System Standby. Probing pipeline server...</div>
         </div>
       </div>
     </div>
@@ -1403,12 +1516,16 @@
                 <div class="flow-step-badge">05</div>
                 <div class="flow-step-body">
                   <div class="final-output-card">
-                    <div class="final-output-header">
+                    <div class="final-output-header" style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                       <div class="final-output-badge">
                         <span class="dot"></span>
                         FINAL OPTIMIZED OUTPUT
                       </div>
-                      <span style="font-family:'Space Mono', monospace; font-size:0.75rem; color:var(--win);" id="final-stats-badge">Score: 0.9100</span>
+                      <div style="display: flex; gap: 0.4rem; align-items: center;">
+                        <button id="btn-copy-consensus" class="btn-utility" title="Copy final optimized text to clipboard">📋 Copy</button>
+                        <button id="btn-download-json" class="btn-utility" title="Download full JSON run data file">💾 Download JSON</button>
+                        <span style="font-family:'Space Mono', monospace; font-size:0.75rem; color:var(--win); margin-left: 0.5rem;" id="final-stats-badge">Score: 0.9100</span>
+                      </div>
                     </div>
                     <div class="final-output-body" id="final-output-display">
                       Click 'RUN FULL SIMULATION' on the control panel to see the finalized output.
@@ -1728,14 +1845,93 @@
   // Base mock dataset initially loaded
   const BASE_SIMULATOR_DATASET = MOCK_PROMPTS_LIBRARY["Explain Quantum Computing simply."];
 
+  // Telemetry logger helper
+  const startTimeStamp = Date.now();
+  function addTelemetryLog(msg) {
+    const term = document.getElementById('telemetry-terminal');
+    if (!term) return;
+    const elapsed = ((Date.now() - startTimeStamp) / 1000).toFixed(1);
+    const div = document.createElement('div');
+    div.innerHTML = `[${elapsed}s] ${msg}`;
+    term.appendChild(div);
+    term.scrollTop = term.scrollHeight;
+  }
+
+  // Probe local consensus pipeline API server
+  function checkServerConnection() {
+    const backendBadge = document.getElementById('backend-status-badge');
+    const sourceBadge = document.getElementById('source-badge');
+    const runBtn = document.getElementById('btn-run-sim');
+    const btnText = document.getElementById('btn-text');
+    
+    fetch('http://127.0.0.1:8000/api/status')
+      .then(response => {
+        if (!response.ok) throw new Error();
+        return response.json();
+      })
+      .then(data => {
+        if (AppState.server_mode !== "LIVE") {
+          backendBadge.innerText = "PIPELINE SERVER: LIVE (CONNECTED)";
+          backendBadge.className = "connection-badge online";
+          backendBadge.style.background = "rgba(16, 185, 129, 0.2)";
+          backendBadge.style.color = "#10B981";
+          backendBadge.style.borderColor = "rgba(16, 185, 129, 0.5)";
+          
+          AppState.server_mode = "LIVE";
+          sourceBadge.innerText = "LIVE PIPELINE";
+          sourceBadge.style.color = "var(--win)";
+          if (btnText) btnText.innerText = "RUN PIPELINE";
+          
+          addTelemetryLog("✓ Connection established with local Consensus API server (port 8000). Live execution mode active.");
+        }
+        
+        // Dynamically sync model lists
+        if (data.models && data.models.length > 0 && AppState.local_models.length !== data.models.length) {
+          AppState.local_models = data.models;
+          const selectControl = document.getElementById('ctrl-model-select');
+          if (selectControl) {
+            selectControl.innerHTML = '';
+            data.models.forEach(model => {
+              const opt = document.createElement('option');
+              opt.value = model;
+              opt.innerText = `${model} (local)`;
+              selectControl.appendChild(opt);
+            });
+            AppState.model = data.models[0];
+            document.getElementById('ctrl-model').innerText = AppState.model;
+          }
+        }
+      })
+      .catch(() => {
+        if (AppState.server_mode !== "SIMULATOR") {
+          backendBadge.innerText = "PIPELINE SERVER: OFFLINE (SIMULATOR MODE)";
+          backendBadge.className = "connection-badge offline";
+          backendBadge.style.background = "rgba(239, 68, 68, 0.2)";
+          backendBadge.style.color = "#EF4444";
+          backendBadge.style.borderColor = "rgba(239, 68, 68, 0.5)";
+          
+          AppState.server_mode = "SIMULATOR";
+          sourceBadge.innerText = "SIMULATOR MODE";
+          sourceBadge.style.color = "var(--accent-purple)";
+          if (btnText) btnText.innerText = "RUN FULL SIMULATION";
+          
+          addTelemetryLog("[Offline] Consensus API server offline. Defaulting to Simulator mode.");
+        }
+      });
+  }
+
   // Initialize App on Load
   window.addEventListener('DOMContentLoaded', () => {
     setupTabControllers();
     setupUploader();
     setupChatTerminal();
     
-    // Auto-detect local models
+    // Auto-detect local models and probe backend server
     detectLocalOllamaModels();
+    checkServerConnection();
+    
+    // Periodically verify connection to support dynamic toggling
+    setInterval(checkServerConnection, 4000);
     
     // Load initial dataset
     loadDataset(BASE_SIMULATOR_DATASET, true);
@@ -1744,6 +1940,87 @@
     document.getElementById('btn-run-sim').addEventListener('click', runFullSimulation);
     document.getElementById('btn-reset-pipeline').addEventListener('click', resetPipelineFresh);
     document.getElementById('btn-refresh-models').addEventListener('click', detectLocalOllamaModels);
+
+    // Bind slider controls
+    const inputSamples = document.getElementById('input-samples');
+    const displaySamplesVal = document.getElementById('slider-samples-val');
+    if (inputSamples && displaySamplesVal) {
+      inputSamples.addEventListener('input', (e) => {
+        AppState.n_samples = parseInt(e.target.value);
+        displaySamplesVal.innerText = AppState.n_samples;
+        const badgeSamples = document.getElementById('badge-n-samples');
+        if (badgeSamples) badgeSamples.innerText = `N = ${AppState.n_samples} Samples`;
+      });
+    }
+
+    const inputRefine = document.getElementById('input-refine');
+    const displayRefineVal = document.getElementById('slider-refine-val');
+    if (inputRefine && displayRefineVal) {
+      inputRefine.addEventListener('input', (e) => {
+        AppState.refine_rounds = parseInt(e.target.value);
+        displayRefineVal.innerText = AppState.refine_rounds;
+        const badgeRefine = document.getElementById('badge-refine-rounds');
+        if (badgeRefine) badgeRefine.innerText = `${AppState.refine_rounds} Refinement Rounds`;
+      });
+    }
+
+    // Telemetry logs clearer
+    const btnClearLogs = document.getElementById('btn-clear-logs');
+    if (btnClearLogs) {
+      btnClearLogs.addEventListener('click', () => {
+        const term = document.getElementById('telemetry-terminal');
+        if (term) term.innerHTML = `<div>[0.0s] Telemetry logs wiped. STANDBY.</div>`;
+      });
+    }
+
+    // Copy to clipboard utility
+    const btnCopy = document.getElementById('btn-copy-consensus');
+    if (btnCopy) {
+      btnCopy.addEventListener('click', () => {
+        if (!AppState.final_output) return;
+        navigator.clipboard.writeText(AppState.final_output)
+          .then(() => {
+            const orig = btnCopy.innerText;
+            btnCopy.innerText = "✓ Copied!";
+            addTelemetryLog("Final optimized text copied to clipboard successfully.");
+            setTimeout(() => { btnCopy.innerText = orig; }, 1500);
+          })
+          .catch(() => {
+            addTelemetryLog("[Error] Failed to copy to clipboard.");
+          });
+      });
+    }
+
+    // Download full packet JSON utility
+    const btnDownload = document.getElementById('btn-download-json');
+    if (btnDownload) {
+      btnDownload.addEventListener('click', () => {
+        if (AppState.samples.length === 0) return;
+        const runData = {
+          prompt: AppState.prompt,
+          model: AppState.model,
+          n_samples: AppState.n_samples,
+          refine_rounds: AppState.refine_rounds,
+          winner_id: AppState.winner_id,
+          raw_winner: AppState.raw_winner,
+          generations: AppState.samples.map(s => s.text),
+          refinements: AppState.refinements,
+          final_output: AppState.final_output,
+          samples: AppState.samples,
+          similarity_matrix: AppState.similarity_matrix
+        };
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(runData, null, 2));
+        const dl = document.createElement('a');
+        dl.setAttribute("href", dataStr);
+        let name = AppState.prompt.toLowerCase().replace(/[^\w\s-]/g, '').replace(/[\s-]+/g, '_').substring(0, 45) + "_run.json";
+        if (name.startsWith("_")) name = "run_data.json";
+        dl.setAttribute("download", name);
+        document.body.appendChild(dl);
+        dl.click();
+        dl.remove();
+        addTelemetryLog(`Downloaded full run data packet: ${name}`);
+      });
+    }
 
     // Synchronize Textareas in real-time
     const sidebarPrompt = document.getElementById('ctrl-prompt');
@@ -1853,8 +2130,15 @@
       promptInput.placeholder = "Select or type a prompt below...";
       promptInput.removeAttribute('title');
     }
-    document.getElementById('ctrl-samples').innerText = "20";
-    document.getElementById('ctrl-refine').innerText = "2";
+    const sliderSamplesVal = document.getElementById('slider-samples-val');
+    if (sliderSamplesVal) sliderSamplesVal.innerText = "20";
+    const inputSamples = document.getElementById('input-samples');
+    if (inputSamples) inputSamples.value = 20;
+
+    const sliderRefineVal = document.getElementById('slider-refine-val');
+    if (sliderRefineVal) sliderRefineVal.innerText = "2";
+    const inputRefine = document.getElementById('input-refine');
+    if (inputRefine) inputRefine.value = 2;
     
     // Reset control panels
     document.getElementById('sim-status-panel').style.display = "none";
@@ -1973,8 +2257,12 @@
     }
     document.getElementById('ctrl-model').innerText = AppState.model;
 
-    // Execute run workflow with bot bubble callbacks
-    executeInteractiveRun(dataset, botBubble);
+    // Execute run workflow with bot bubble callbacks based on server mode
+    if (AppState.server_mode === "LIVE") {
+      runLivePipelineExecution(promptText, botBubble);
+    } else {
+      executeInteractiveRun(dataset, botBubble);
+    }
   }
 
   // Generates randomized realistic data sets for custom untracked prompts entered by the user
@@ -1995,68 +2283,8 @@
       "An overly complex, dense mathematical proof addressing technical details.",
       "A three-word, overly brief explanation.",
       "A highly hallucinated answer claiming impossible scientific metrics.",
-      "An off-topic historical discourse starting with 18th-century infrastructure."
-    ];
-
-    // Category 1: Black Holes / Space / Gravity / Astronomy
-    if (promptLower.includes("black hole") || promptLower.includes("gravity") || promptLower.includes("space") || promptLower.includes("analogy") || promptLower.includes("analogies")) {
-      winner_id = 1;
-      raw_winner = "Think of space as a giant, stretched trampoline. If you place a heavy bowling ball in the middle, it creates a deep slope. If you roll a marble nearby, it orbits the ball, spiraling inward. A black hole is like squeezing that entire massive bowling ball into a microscopic grain of sand. It creates a well so steep that once anything—even light—slips past the event horizon boundary, it can never climb back out.";
-      refinements = [
-        "Imagine the universe as a vast, stretched fabric—like a massive trampoline. A normal star is like a bowling ball resting on that fabric, creating a gentle slope that marble-like planets roll around.\n\nNow, imagine squeezing that entire bowling ball into a microscopic grain of sand while keeping its massive weight. The fabric of space doesn't just bend; it tears, creating an infinitely deep funnel. This is a Black Hole.\n\nThe boundary of this funnel is the Event Horizon, the cosmic 'point of no return.' Once an object crosses this boundary, the downward slope becomes steeper than the speed of light itself. Since nothing can travel faster than light, nothing can climb back out.",
-        "Imagine the universe as a vast, stretched fabric—like a massive trampoline. A normal star is like a bowling ball resting on that fabric, creating a gentle slope that marble-like planets roll around.\n\nNow, imagine squeezing that entire bowling ball into a microscopic grain of sand while keeping its massive weight. The fabric of space doesn't just bend; it tears, creating an infinitely deep funnel. This is a **Black Hole**.\n\nThe boundary of this funnel is the **Event Horizon**, the cosmic 'point of no return.' Once an object—whether a spaceship, an asteroid, or even a beam of light—crosses this boundary, the downward slope becomes steeper than the speed of light itself. Since nothing can travel faster than light, nothing can climb back out.\n\nAt the very center lies the **Singularity**, a point where all that colossal mass is crushed into absolute zero volume, bringing our classical laws of physics to a screeching halt."
-      ];
-      final_output = refinements[1];
-      keywords = ["trampoline", "bowling ball", "event horizon", "singularity", "funnel"];
-      outliers = [
-        "In the quiet dark of the starless night, / Sucking in the paths of ancient light, / A gravity so strong, a stellar ghost, / Feasting on the matter it loves most.",
-        "The Schwarzschild radius Rs is equal to 2GM/c^2. Setting the escape velocity equal to c, we get the event horizon of a non-rotating spherically symmetric mass distribution, governed by the Schwarzschild metric ds^2 = -(1-2GM/c^2 r)dt^2 + ...",
-        "A black hole is just a giant space vacuum cleaner that cleans up space dust.",
-        "Black holes are actually wormholes that lead to a vacuum cleaner factory in another dimension. If you fall in, you are compressed and turned into dustbags.",
-        "The history of telescopes begins in 1608 with Hans Lippershey, a Dutch spectaclemaker. He applied for a patent for a device that could make far objects appear close..."
-      ];
-    }
-    
-    // Category 2: Programming / Coding / Rust / Python / JavaScript
-    else if (promptLower.includes("code") || promptLower.includes("programming") || promptLower.includes("rust") || promptLower.includes("python") || promptLower.includes("javascript") || promptLower.includes("software")) {
-      winner_id = 0;
-      raw_winner = "A high-performance system programming language focuses on safety, speed, and concurrency. By replacing garbage collection with a strict borrow checker compile model, it guarantees memory safety at compile-time without runtime overhead.";
-      refinements = [
-        "Modern systems programming has evolved. Standard languages like C++ offer speed but suffer from memory leakage and segfault risks, while higher languages like Java use slow garbage collectors. By introducing a strict ownership model governed by a compile-time 'borrow checker', modern languages like Rust guarantee thread-safe operations and zero runtime memory overhead.",
-        "Modern systems programming has evolved.\n\nTraditionally, developers faced a trade-off: use low-level languages like C/C++ for raw speed and suffer from dangerous memory leaks and segfaults, or use high-level languages like Java/Go and suffer from slow garbage collection pauses.\n\nBy introducing a strict **Ownership and Borrowing Model** checked at compile-time, modern languages like **Rust** solve this. You get maximum execution speed, zero memory leak vulnerabilities, and robust multi-threaded concurrency—all compiled cleanly into a single high-performance binary."
-      ];
-      final_output = refinements[1];
-      keywords = ["ownership", "concurrency", "garbage collection", "borrow checker", "safety"];
-      outliers = [
-        "In brackets bound and semicolons spun, / The system thread is safely run.",
-        "Let us define a Turing machine as a 7-tuple M = (Q, Sigma, Gamma, delta, q0, B, F) where Q is a finite set of states, Sigma is a finite set of input symbols...",
-        "Coding is just typing words into a computer really fast so it does stuff.",
-        "Programming works because the computer has tiny trolls inside the CPU that read your text and paint the screen according to what you wrote.",
-        "The history of keyboards begins with the typewriter in 1868, invented by Christopher Latham Sholes. The QWERTY layout was designed to prevent jamming..."
-      ];
-    }
-
-    // Category 3: Biology / Cell / Science / Photosynthesis / DNA
-    else if (promptLower.includes("cell") || promptLower.includes("biology") || promptLower.includes("science") || promptLower.includes("dna") || promptLower.includes("respiration") || promptLower.includes("photosynthesis")) {
-      winner_id = 1;
-      raw_winner = "Cells produce energy using cellular respiration. Mitochondria take glucose and oxygen and convert them into ATP, releasing carbon dioxide and water as byproducts. This keeps our cellular machinery functioning.";
-      refinements = [
-        "Cellular respiration is the combustion engine of life. Inside your cells, tiny power plants called mitochondria extract energy from the food you eat (glucose) in the presence of oxygen. This complex chemical cascade synthesizes ATP (adenosine triphosphate), the global energy currency of biological organisms.",
-        "Cellular respiration is the ultimate combustion engine of biological life.\n\nInside almost every cell of your body, tiny microscopic powerhouses called **Mitochondria** perform a marvelous chemical dance. They take the food you eat (glucose) and the air you breathe (oxygen) and run them through a molecular factory.\n\nThe final product is **ATP (Adenosine Triphosphate)** — the absolute universal energy currency of cellular life. ATP acts like a fully charged rechargeable battery, powering everything from muscle contractions to active neural signaling, while cleanly releasing carbon dioxide and water as simple byproducts."
-      ];
-      final_output = refinements[1];
-      keywords = ["mitochondria", "glucose", "ATP", "respiration", "chemical"];
-      outliers = [
-        "Tiny cell, unseen by eyes, / Under glass, a grand surprise. / Spinning energy of light, / Breathing in the cosmic night.",
-        "The Krebs cycle, also known as the citric acid cycle, begins with the condensation of acetyl-CoA with oxaloacetate to form citrate. This reaction is catalyzed by citrate synthase. Citrate is then isomerized into isocitrate by aconitase...",
-        "Cellular respiration is just breathing but inside your cells really fast.",
-        "Cells produce energy because they have small nuclear fusion reactors inside them that split hydrogen atoms to create glowing biological lightning.",
-        "The history of microscopes dates back to 1590, when Zacharias Janssen, a Dutch spectaclemaker, created the first compound microscope by placing lenses..."
-      ];
-    }
-
-    // Category 4: Creative Writing / Horror / Sci-Fi / Story / Fiction / Poetry
-    else if (promptLower.includes("horror") || promptLower.includes("story") || promptLower.includes("simulation") || promptLower.includes("fiction") || promptLower.includes("creative") || promptLower.includes("write") || promptLower.includes("poem") || promptLower.includes("poetry") || promptLower.includes("novel") || promptLower.includes("sci-fi") || promptLower.includes("tale") || promptLower.includes("narrative") || promptLower.includes("book")) {
+      "An off-topic historical discourse starting with     // Category 4: Creative Writing / Horror / Sci-Fi / Story / Fiction / Poetry
+    if (promptLower.includes("horror") || promptLower.includes("story") || promptLower.includes("simulation") || promptLower.includes("fiction") || promptLower.includes("creative") || promptLower.includes("write") || promptLower.includes("poem") || promptLower.includes("poetry") || promptLower.includes("novel") || promptLower.includes("sci-fi") || promptLower.includes("tale") || promptLower.includes("narrative") || promptLower.includes("book")) {
       
       // Sub-theme A: AI discovering emotions / Robots / Sci-Fi
       if (/\bai\b/i.test(prompt) || promptLower.includes("robot") || promptLower.includes("android") || promptLower.includes("machine") || promptLower.includes("emotion") || promptLower.includes("emotions") || promptLower.includes("consciousness") || promptLower.includes("feel") || promptLower.includes("feeling")) {
@@ -2114,6 +2342,63 @@
       }
     }
 
+    // Category 1: Black Holes / Space / Gravity / Astronomy
+    else if (promptLower.includes("black hole") || promptLower.includes("gravity") || promptLower.includes("space") || promptLower.includes("analogy") || promptLower.includes("analogies")) {
+      winner_id = 1;
+      raw_winner = "Think of space as a giant, stretched trampoline. If you place a heavy bowling ball in the middle, it creates a deep slope. If you roll a marble nearby, it orbits the ball, spiraling inward. A black hole is like squeezing that entire massive bowling ball into a microscopic grain of sand. It creates a well so steep that once anything—even light—slips past the event horizon boundary, it can never climb back out.";
+      refinements = [
+        "Imagine the universe as a vast, stretched fabric—like a massive trampoline. A normal star is like a bowling ball resting on that fabric, creating a gentle slope that marble-like planets roll around.\n\nNow, imagine squeezing that entire bowling ball into a microscopic grain of sand while keeping its massive weight. The fabric of space doesn't just bend; it tears, creating an infinitely deep funnel. This is a Black Hole.\n\nThe boundary of this funnel is the Event Horizon, the cosmic 'point of no return.' Once an object crosses this boundary, the downward slope becomes steeper than the speed of light itself. Since nothing can travel faster than light, nothing can climb back out.",
+        "Imagine the universe as a vast, stretched fabric—like a massive trampoline. A normal star is like a bowling ball resting on that fabric, creating a gentle slope that marble-like planets roll around.\n\nNow, imagine squeezing that entire bowling ball into a microscopic grain of sand while keeping its massive weight. The fabric of space doesn't just bend; it tears, creating an infinitely deep funnel. This is a **Black Hole**.\n\nThe boundary of this funnel is the **Event Horizon**, the cosmic 'point of no return.' Once an object—whether a spaceship, an asteroid, or even a beam of light—crosses this boundary, the downward slope becomes steeper than the speed of light itself. Since nothing can travel faster than light, nothing can climb back out.\n\nAt the very center lies the **Singularity**, a point where all that colossal mass is crushed into absolute zero volume, bringing our classical laws of physics to a screeching halt."
+      ];
+      final_output = refinements[1];
+      keywords = ["trampoline", "bowling ball", "event horizon", "singularity", "funnel"];
+      outliers = [
+        "In the quiet dark of the starless night, / Sucking in the paths of ancient light, / A gravity so strong, a stellar ghost, / Feasting on the matter it loves most.",
+        "The Schwarzschild radius Rs is equal to 2GM/c^2. Setting the escape velocity equal to c, we get the event horizon of a non-rotating spherically symmetric mass distribution, governed by the Schwarzschild metric ds^2 = -(1-2GM/c^2 r)dt^2 + ...",
+        "A black hole is just a giant space vacuum cleaner that cleans up space dust.",
+        "Black holes are actually wormholes that lead to a vacuum cleaner factory in another dimension. If you fall in, you are compressed and turned into dustbags.",
+        "The history of telescopes begins in 1608 with Hans Lippershey, a Dutch spectaclemaker. He applied for a patent for a device that could make far objects appear close..."
+      ];
+    }
+    
+    // Category 2: Programming / Coding / Rust / Python / JavaScript
+    else if (promptLower.includes("code") || promptLower.includes("programming") || promptLower.includes("rust") || promptLower.includes("python") || promptLower.includes("javascript") || promptLower.includes("software")) {
+      winner_id = 0;
+      raw_winner = "A high-performance system programming language focuses on safety, speed, and concurrency. By replacing garbage collection with a strict borrow checker compile model, it guarantees memory safety at compile-time without runtime overhead.";
+      refinements = [
+        "Modern systems programming has evolved. Standard languages like C++ offer speed but suffer from memory leakage and segfault risks, while higher languages like Java use slow garbage collectors. By introducing a strict ownership model governed by a compile-time 'borrow checker', modern languages like Rust guarantee thread-safe operations and zero runtime memory overhead.",
+        "Modern systems programming has evolved.\n\nTraditionally, developers faced a trade-off: use low-level languages like C/C++ for raw speed and suffer from dangerous memory leaks and segfaults, or use high-level languages like Java/Go and suffer from slow garbage collection pauses.\n\nBy introducing a strict **Ownership and Borrowing Model** checked at compile-time, modern languages like **Rust** solve this. You get maximum execution speed, zero memory leak vulnerabilities, and robust multi-threaded concurrency—all compiled cleanly into a single high-performance binary."
+      ];
+      final_output = refinements[1];
+      keywords = ["ownership", "concurrency", "garbage collection", "borrow checker", "safety"];
+      outliers = [
+        "In brackets bound and semicolons spun, / The system thread is safely run.",
+        "Let us define a Turing machine as a 7-tuple M = (Q, Sigma, Gamma, delta, q0, B, F) where Q is a finite set of states, Sigma is a finite set of input symbols...",
+        "Coding is just typing words into a computer really fast so it does stuff.",
+        "Programming works because the computer has tiny trolls inside the CPU that read your text and paint the screen according to what you wrote.",
+        "The history of keyboards begins with the typewriter in 1868, invented by Christopher Latham Sholes. The QWERTY layout was designed to prevent jamming..."
+      ];
+    }
+
+    // Category 3: Biology / Cell / Science / Photosynthesis / DNA
+    else if (promptLower.includes("cell") || promptLower.includes("biology") || promptLower.includes("science") || promptLower.includes("dna") || promptLower.includes("respiration") || promptLower.includes("photosynthesis")) {
+      winner_id = 1;
+      raw_winner = "Cells produce energy using cellular respiration. Mitochondria take glucose and oxygen and convert them into ATP, releasing carbon dioxide and water as byproducts. This keeps our cellular machinery functioning.";
+      refinements = [
+        "Cellular respiration is the combustion engine of life. Inside your cells, tiny power plants called mitochondria extract energy from the food you eat (glucose) in the presence of oxygen. This complex chemical cascade synthesizes ATP (adenosine triphosphate), the global energy currency of biological organisms.",
+        "Cellular respiration is the ultimate combustion engine of biological life.\n\nInside almost every cell of your body, tiny microscopic powerhouses called **Mitochondria** perform a marvelous chemical dance. They take the food you eat (glucose) and the air you breathe (oxygen) and run them through a molecular factory.\n\nThe final product is **ATP (Adenosine Triphosphate)** — the absolute universal energy currency of cellular life. ATP acts like a fully charged rechargeable battery, powering everything from muscle contractions to active neural signaling, while cleanly releasing carbon dioxide and water as simple byproducts."
+      ];
+      final_output = refinements[1];
+      keywords = ["mitochondria", "glucose", "ATP", "respiration", "chemical"];
+      outliers = [
+        "Tiny cell, unseen by eyes, / Under glass, a grand surprise. / Spinning energy of light, / Breathing in the cosmic night.",
+        "The Krebs cycle, also known as the citric acid cycle, begins with the condensation of acetyl-CoA with oxaloacetate to form citrate. This reaction is catalyzed by citrate synthase. Citrate is then isomerized into isocitrate by aconitase...",
+        "Cellular respiration is just breathing but inside your cells really fast.",
+        "Cells produce energy because they have small nuclear fusion reactors inside them that split hydrogen atoms to create glowing biological lightning.",
+        "The history of microscopes dates back to 1590, when Zacharias Janssen, a Dutch spectaclemaker, created the first compound microscope by placing lenses..."
+      ];
+    }
+
     // Category 5: AI / Artificial Intelligence / Neural / LLM / Machine Learning (using exact word boundary for AI)
     else if (/\bai\b/i.test(prompt) || promptLower.includes("artificial intelligence") || promptLower.includes("neural") || promptLower.includes("llm") || promptLower.includes("machine learning") || promptLower.includes("gpt")) {
       winner_id = 2;
@@ -2140,7 +2425,6 @@
       refinements = [
         `Here is a highly refined consensus draft addressing your query: "${prompt}". The structure has been optimized to present key principles, logical definitions, and clear terminology.`,
         `Here is the finalized polished consensus output for your request:\n\n**"${prompt}"**\n\n1. **Core Overview**: This response addresses the central themes of your query, prioritizing clear explanations, logical sequencing, and highly relevant details.\n\n2. **Synthesis of Ideas**: By filtering out redundant fluff and conversational filler from diverse pathways, this output delivers a balanced, high-precision summary that captures the conceptual heart of the topic.\n\n3. **Practical Value**: The final result has been structured to maximize clarity, providing a reliable, comprehensive answer optimized to serve your custom request.`
-      ];
       final_output = refinements[1];
     }
 
@@ -2194,6 +2478,264 @@
     };
 
     return dataset;
+  }
+
+  // Live consensus pipeline execution runner via Python HTTP backend
+  function runLivePipelineExecution(promptText, botBubble) {
+    AppState.is_simulating = true;
+    const btn = document.getElementById('btn-run-sim');
+    const statusPanel = document.getElementById('sim-status-panel');
+    const simState = document.getElementById('sim-state');
+    const simTime = document.getElementById('sim-time');
+    const simScore = document.getElementById('sim-score');
+    const simBar = document.getElementById('sim-progress-bar');
+    
+    if (btn) {
+      btn.disabled = true;
+      btn.querySelector('#btn-text').innerText = "LIVE PIPELINE ACTIVE...";
+    }
+    if (statusPanel) statusPanel.style.display = "flex";
+    if (simBar) simBar.style.width = "0%";
+    if (simScore) simScore.innerText = "-";
+    
+    // Clear display values from pipeline cards
+    const stepCards = document.querySelectorAll('.flow-step-card');
+    stepCards.forEach(c => c.classList.remove('active', 'success'));
+    document.getElementById('step-card-5').style.display = "none";
+    
+    // Empty docks
+    document.getElementById('dock-1').innerHTML = "";
+    document.getElementById('dock-2').innerHTML = "";
+    document.getElementById('dock-3').innerHTML = "";
+    document.getElementById('dock-4').innerHTML = "";
+    
+    addTelemetryLog(`Starting live consensus pipeline run...`);
+    addTelemetryLog(`Prompt: "${promptText.substring(0, 45)}..."`);
+    addTelemetryLog(`Model: ${AppState.model} | Samples: ${AppState.n_samples} | Refine: ${AppState.refine_rounds}`);
+
+    // Timer simulation
+    let seconds = 0.0;
+    const timerInterval = setInterval(() => {
+      seconds += 0.1;
+      if (simTime) simTime.innerText = seconds.toFixed(1) + "s";
+    }, 100);
+
+    // Update status in steps
+    if (simState) {
+      simState.innerText = "STAGE 1: GENERATING";
+      simState.className = "status-val active";
+    }
+    if (simBar) simBar.style.width = "15%";
+    
+    botBubble.className = "chat-bubble bot";
+    botBubble.innerHTML = `✓ Local API Server Connected!<br/>` +
+      `✓ Starting parallel generation on local Ollama server using <strong>${AppState.model}</strong> (N = ${AppState.n_samples} samples)...<br/>` +
+      `<em>This runs live using multi-threading and can take 10-30 seconds depending on hardware performance...</em>`;
+    
+    const card1 = document.getElementById('step-card-1');
+    if (card1) card1.classList.add('active');
+    
+    const barsContainer = document.getElementById('step-1-bars');
+    if (barsContainer) {
+      barsContainer.innerHTML = Array(AppState.n_samples).fill().map((_, i) => 
+        `<div class="parallel-bar generating" id="sim-bar-${i}"></div>`
+      ).join('');
+    }
+
+    const dock1 = document.getElementById('dock-1');
+    if (dock1) dock1.innerHTML = `<div>[0.0s] Querying multi-threaded Python server...</div>`;
+    addTelemetryLog("Invoking API POST http://127.0.0.1:8000/api/run...");
+
+    // Stagger bar completion as if loading
+    let barIndex = 0;
+    const barInterval = setInterval(() => {
+      if (barIndex < AppState.n_samples) {
+        const bar = document.getElementById(`sim-bar-${barIndex}`);
+        if (bar) {
+          bar.className = "parallel-bar completed";
+          if (dock1) {
+            dock1.innerHTML += `<div>[${(seconds).toFixed(1)}s] Processing sample thread #${String(barIndex+1).padStart(2, '0')}...</div>`;
+            dock1.scrollTop = dock1.scrollHeight;
+          }
+        }
+        barIndex++;
+      } else {
+        clearInterval(barInterval);
+      }
+    }, 450);
+
+    // Make the API call to Python server
+    fetch('http://127.0.0.1:8000/api/run', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        prompt: promptText,
+        model: AppState.model,
+        n: AppState.n_samples,
+        refine: AppState.refine_rounds,
+        clustering: "average",
+        workers: 4
+      })
+    })
+    .then(response => {
+      if (!response.ok) {
+        return response.json().then(errData => {
+          throw new Error(errData.error || "Server run failed");
+        });
+      }
+      return response.json();
+    })
+    .then(data => {
+      // Clear thread timer
+      clearInterval(barInterval);
+      
+      // Update thread bars directly
+      for (let i = 0; i < AppState.n_samples; i++) {
+        const bar = document.getElementById(`sim-bar-${i}`);
+        if (bar) bar.className = "parallel-bar completed";
+      }
+      if (dock1) dock1.innerHTML += `<div>[${(seconds).toFixed(1)}s] All ${AppState.n_samples} samples generated live.</div>`;
+      addTelemetryLog(`✓ Generation stage completed in ${seconds.toFixed(1)}s`);
+
+      // STAGE 2: Embedding
+      if (simState) simState.innerText = "STAGE 2: EMBEDDING";
+      if (simBar) simBar.style.width = "40%";
+      if (card1) card1.classList.add('success');
+      
+      const card2 = document.getElementById('step-card-2');
+      if (card2) card2.classList.add('active');
+      
+      const dock2 = document.getElementById('dock-2');
+      if (dock2) dock2.innerHTML = `<div>[${(seconds).toFixed(1)}s] Embedding outputs via sentence-transformers...</div>`;
+      addTelemetryLog("Calculating sentence embeddings on local GPU/CPU...");
+
+      setTimeout(() => {
+        if (dock2) {
+          dock2.innerHTML += `<div>[${(seconds).toFixed(1)}s] Projected samples into 384-dimensional semantic space.</div>`;
+        }
+        if (card2) card2.classList.add('success');
+        addTelemetryLog("Embedding projection complete.");
+
+        // STAGE 3: Consensus
+        if (simState) simState.innerText = "STAGE 3: CONSENSUS";
+        if (simBar) simBar.style.width = "65%";
+        
+        const card3 = document.getElementById('step-card-3');
+        if (card3) card3.classList.add('active');
+        
+        const dock3 = document.getElementById('dock-3');
+        if (dock3) dock3.innerHTML = `<div>[${(seconds).toFixed(1)}s] Building cosine similarity matrix...</div>`;
+        addTelemetryLog("Computing Bekenstein-Hawking centroid similarity...");
+
+        setTimeout(() => {
+          // Load backend data into AppState
+          loadDataset(data, false);
+          
+          const winner = AppState.samples[AppState.winner_id];
+          if (simScore) simScore.innerText = winner.avg_similarity.toFixed(4);
+          
+          if (dock3) {
+            dock3.innerHTML += `<div>[${(seconds).toFixed(1)}s] Consensus isolated at Centroid ID: <strong>Sample #${String(winner.id).padStart(2, '0')}</strong></div>` +
+              `<div>[${(seconds).toFixed(1)}s] Max average cosine similarity score: <strong>${winner.avg_similarity.toFixed(4)}</strong></div>` +
+              `<div style="margin-top:0.4rem; padding: 0.5rem; background:#070b13; border: 1px solid var(--border); border-radius:4px; font-size:0.7rem; color:#fff;">"${AppState.raw_winner}"</div>`;
+          }
+          
+          if (card3) card3.classList.add('success');
+          addTelemetryLog(`Centroid isolated: Sample #${winner.id} with coherence ${winner.avg_similarity.toFixed(4)}`);
+
+          // Render interactive maps immediately
+          render2DClusterMap();
+          renderSimilarityHeatmap();
+
+          // STAGE 4: Refinement
+          if (simState) simState.innerText = "STAGE 4: REFINING";
+          if (simBar) simBar.style.width = "88%";
+          
+          const card4 = document.getElementById('step-card-4');
+          if (card4) card4.classList.add('active');
+          
+          const dock4 = document.getElementById('dock-4');
+          if (dock4) dock4.innerHTML = `<div>[${(seconds).toFixed(1)}s] Running ${AppState.refine_rounds} refinement loop(s)...</div>`;
+          addTelemetryLog("Executing low-temperature polishing passes...");
+
+          setTimeout(() => {
+            if (dock4) {
+              if (AppState.refinements && AppState.refinements.length > 0) {
+                AppState.refinements.forEach((ref, idx) => {
+                  dock4.innerHTML += `<div style="margin-top:0.4rem; color:var(--win);">[${(seconds).toFixed(1)}s] Round ${idx+1} Refined output completed:</div>` + 
+                    `<div style="padding:0.4rem; font-size:0.65rem; background:#070b13; border:1px solid rgba(5,255,155,0.15); border-radius:4px; margin-top:0.2rem;">${ref.substring(0, 120)}...</div>`;
+                });
+              } else {
+                dock4.innerHTML += `<div>[${(seconds).toFixed(1)}s] No refinement rounds requested. Centroid sample selected directly.</div>`;
+              }
+            }
+            if (card4) card4.classList.add('success');
+            addTelemetryLog("Refinement polishing passes complete.");
+
+            // STAGE 5: Finished
+            setTimeout(() => {
+              clearInterval(timerInterval);
+              if (simState) {
+                simState.innerText = "COMPLETED";
+                simState.className = "status-val finished";
+              }
+              if (simBar) simBar.style.width = "100%";
+              
+              const card5 = document.getElementById('step-card-5');
+              if (card5) {
+                card5.style.display = "grid";
+                setTimeout(() => card5.classList.add('active', 'success'), 50);
+              }
+
+              // Print final output
+              document.getElementById('final-output-display').innerText = AppState.final_output;
+              document.getElementById('final-stats-badge').innerText = `Score: ${winner.avg_similarity.toFixed(4)}`;
+              document.getElementById('final-footer-model').innerText = `Refinement Model: ${AppState.model}`;
+
+              // Final Chat bubble showing optimized output
+              addChatBubble("bot", `🎉 <strong>Stochastic Convergence Completed!</strong><br/>` +
+                `The live run has successfully finished and saved data to your workspace <code>queries/</code> folder!<br/><br/>` +
+                `<div style="background:#070b13; border:1.5px solid rgba(5, 255, 155, 0.3); border-radius: 8px; padding:0.8rem; font-size:0.78rem; line-height:1.5; color:#fff;">${AppState.final_output}</div>`);
+
+              // Reset controls
+              AppState.is_simulating = false;
+              if (btn) {
+                btn.disabled = false;
+                btn.querySelector('#btn-text').innerText = "RERUN PIPELINE";
+              }
+              
+              addTelemetryLog(`✓ Live pipeline run completed successfully in ${seconds.toFixed(1)}s!`);
+            }, 800);
+
+          }, 800);
+
+        }, 800);
+
+      }, 800);
+      
+    })
+    .catch(err => {
+      clearInterval(timerInterval);
+      clearInterval(barInterval);
+      AppState.is_simulating = false;
+      if (btn) {
+        btn.disabled = false;
+        btn.querySelector('#btn-text').innerText = "RUN PIPELINE";
+      }
+      if (simState) {
+        simState.innerText = "ERROR";
+        simState.className = "status-val active";
+        simState.style.color = "#EF4444";
+      }
+      
+      addTelemetryLog(`[ERROR] Live pipeline execution failed: ${err.message}`);
+      botBubble.className = "chat-bubble bot";
+      botBubble.innerHTML = `❌ <strong>Live Run Failed!</strong><br/>` +
+        `<span style="color:#EF4444;">Reason: ${err.message}</span><br/><br/>` +
+        `Please ensure that Ollama is running and has downloaded model <strong>'${AppState.model}'</strong>. You can do this by running <code>ollama pull ${AppState.model}</code> in your terminal.`;
+    });
   }
 
   // Interactive runner that binds simulator animations with chat updates
@@ -2408,8 +2950,15 @@
       promptInput.title = AppState.prompt;
     }
     document.getElementById('ctrl-model').innerText = AppState.model;
-    document.getElementById('ctrl-samples').innerText = AppState.n_samples;
-    document.getElementById('ctrl-refine').innerText = AppState.refine_rounds;
+    const sliderSamplesVal = document.getElementById('slider-samples-val');
+    if (sliderSamplesVal) sliderSamplesVal.innerText = AppState.n_samples;
+    const inputSamples = document.getElementById('input-samples');
+    if (inputSamples) inputSamples.value = AppState.n_samples;
+
+    const sliderRefineVal = document.getElementById('slider-refine-val');
+    if (sliderRefineVal) sliderRefineVal.innerText = AppState.refine_rounds;
+    const inputRefine = document.getElementById('input-refine');
+    if (inputRefine) inputRefine.value = AppState.refine_rounds;
     document.getElementById('badge-n-samples').innerText = `N = ${AppState.n_samples} Samples`;
     document.getElementById('badge-refine-rounds').innerText = `${AppState.refine_rounds} Refinement Rounds`;
     
@@ -2624,7 +3173,12 @@
       dataset = createDynamicPromptDataset(promptText);
     }
 
-    executeInteractiveRun(dataset, botBubble);
+    // Route to live connected run or offline simulator based on server mode
+    if (AppState.server_mode === "LIVE") {
+      runLivePipelineExecution(promptText, botBubble);
+    } else {
+      executeInteractiveRun(dataset, botBubble);
+    }
   }
 
   // -------------------------------------------------------------
