@@ -1297,6 +1297,22 @@
 <div class="glow-cyan"></div>
 <div class="container">
 
+  <!-- Private Network Access (PNA) / file:// Warning Banner -->
+  <div id="pna-warning-banner" style="display: none; background: rgba(239, 68, 68, 0.08); border: 1px dashed rgba(239, 68, 68, 0.4); padding: 0.8rem 1.2rem; border-radius: 8px; margin-bottom: 1.5rem; align-items: center; justify-content: space-between; gap: 1rem; backdrop-filter: blur(10px); animation: pulse-red 2s infinite;">
+    <div style="display: flex; align-items: center; gap: 0.8rem;">
+      <span style="font-size: 1.5rem; color: #EF4444; line-height: 1;">⚠️</span>
+      <div style="text-align: left;">
+        <h4 style="margin: 0; color: #fff; font-family: 'Space Mono', monospace; font-size: 0.85rem; font-weight: bold; letter-spacing: 0.5px;">CROSS-ORIGIN BROWSER RESTRICTION DETECTED</h4>
+        <p style="margin: 0.2rem 0 0 0; color: var(--text-muted); font-size: 0.72rem; line-height: 1.3;">
+          You loaded this visualizer via <code style="color: #EF4444; background: rgba(0,0,0,0.3); padding: 1px 4px; border-radius: 3px;">file://</code>. Chrome blocks connections to your running local server due to security policies.
+        </p>
+      </div>
+    </div>
+    <a href="http://127.0.0.1:8000/" target="_blank" style="display: inline-flex; align-items: center; background: rgba(0, 229, 255, 0.15); border: 1px solid var(--accent); color: var(--accent); font-family: 'Space Mono', monospace; font-size: 0.75rem; font-weight: bold; padding: 0.5rem 1rem; border-radius: 4px; text-decoration: none; cursor: pointer; transition: all 0.3s; box-shadow: 0 0 10px rgba(0, 229, 255, 0.2); white-space: nowrap;" onmouseover="this.style.background='var(--accent)'; this.style.color='#000'; this.style.boxShadow='0 0 20px var(--accent)'" onmouseout="this.style.background='rgba(0, 229, 255, 0.15)'; this.style.color='var(--accent)'; this.style.boxShadow='0 0 10px rgba(0, 229, 255, 0.2)'">
+      OPEN VIA LIVE SERVER ↗
+    </a>
+  </div>
+
   <!-- Header -->
   <header>
     <div class="brand-logo">
@@ -1865,6 +1881,7 @@
     const sourceBadge = document.getElementById('source-badge');
     const runBtn = document.getElementById('btn-run-sim');
     const btnText = document.getElementById('btn-text');
+    const ollamaBadge = document.getElementById('ollama-status-badge');
     
     fetch(`${API_BASE}/api/status`)
       .then(response => {
@@ -1886,21 +1903,48 @@
           
           addTelemetryLog("✓ Connection established with local Consensus API server (port 8000). Live execution mode active.");
         }
+
+        // Sync Ollama Status
+        if (ollamaBadge) {
+          if (data.ollama_status === "online") {
+            ollamaBadge.innerText = "ONLINE";
+            ollamaBadge.className = "connection-badge online";
+            ollamaBadge.style.background = "rgba(16, 185, 129, 0.2)";
+            ollamaBadge.style.color = "#10B981";
+            ollamaBadge.style.borderColor = "rgba(16, 185, 129, 0.5)";
+          } else {
+            ollamaBadge.innerText = "STANDBY";
+            ollamaBadge.className = "connection-badge offline";
+            ollamaBadge.style.background = "rgba(239, 68, 68, 0.2)";
+            ollamaBadge.style.color = "#EF4444";
+            ollamaBadge.style.borderColor = "rgba(239, 68, 68, 0.5)";
+          }
+        }
         
         // Dynamically sync model lists
-        if (data.models && data.models.length > 0 && AppState.local_models.length !== data.models.length) {
-          AppState.local_models = data.models;
+        if (data.models && data.models.length > 0) {
           const selectControl = document.getElementById('ctrl-model-select');
           if (selectControl) {
-            selectControl.innerHTML = '';
-            data.models.forEach(model => {
-              const opt = document.createElement('option');
-              opt.value = model;
-              opt.innerText = `${model} (local)`;
-              selectControl.appendChild(opt);
-            });
-            AppState.model = data.models[0];
-            document.getElementById('ctrl-model').innerText = AppState.model;
+            const currentOptions = Array.from(selectControl.options).map(o => o.value);
+            const listsEqual = currentOptions.length === data.models.length && currentOptions.every((v, i) => v === data.models[i]);
+            
+            if (!listsEqual) {
+              AppState.local_models = data.models;
+              selectControl.innerHTML = '';
+              data.models.forEach(model => {
+                const opt = document.createElement('option');
+                opt.value = model;
+                opt.innerText = `${model} (local)`;
+                selectControl.appendChild(opt);
+              });
+              if (data.models.includes(AppState.model)) {
+                selectControl.value = AppState.model;
+              } else {
+                AppState.model = data.models[0];
+                selectControl.value = AppState.model;
+                document.getElementById('ctrl-model').innerText = AppState.model;
+              }
+            }
           }
         }
       })
@@ -1924,6 +1968,12 @@
 
   // Initialize App on Load
   window.addEventListener('DOMContentLoaded', () => {
+    // Show PNA banner if accessed via file://
+    if (window.location.protocol === 'file:') {
+      const banner = document.getElementById('pna-warning-banner');
+      if (banner) banner.style.display = 'flex';
+    }
+
     setupTabControllers();
     setupUploader();
     setupChatTerminal();
@@ -2054,7 +2104,68 @@
     statusBadge.innerText = "SCANNING...";
     statusBadge.className = "connection-badge offline";
     
-    // Query local Ollama API
+    // If backend server is active, route through backend to avoid browser CORS / PNA blocks!
+    if (AppState.server_mode === "LIVE") {
+      fetch(`${API_BASE}/api/status`)
+        .then(response => {
+          if (!response.ok) throw new Error("Backend server responded with error status");
+          return response.json();
+        })
+        .then(data => {
+          if (data.ollama_status === "online") {
+            statusBadge.innerText = "ONLINE";
+            statusBadge.className = "connection-badge online";
+            statusBadge.style.background = "rgba(16, 185, 129, 0.2)";
+            statusBadge.style.color = "#10B981";
+            statusBadge.style.borderColor = "rgba(16, 185, 129, 0.5)";
+            
+            if (data.models && data.models.length > 0) {
+              AppState.local_models = data.models;
+              selectControl.innerHTML = '';
+              data.models.forEach(model => {
+                const opt = document.createElement('option');
+                opt.value = model;
+                opt.innerText = `${model} (local)`;
+                selectControl.appendChild(opt);
+              });
+              
+              if (data.models.includes(AppState.model)) {
+                selectControl.value = AppState.model;
+              } else {
+                AppState.model = data.models[0];
+                selectControl.value = AppState.model;
+                document.getElementById('ctrl-model').innerText = AppState.model;
+              }
+              addChatBubble("bot", `✓ Local model scanning completed via API. Isolated <strong>${data.models.length} local models</strong>. Configured active model to <strong>'${AppState.model}'</strong>.`);
+            } else {
+              addChatBubble("bot", `✓ API connection verified, but no local Ollama models were found. Try pulling one via terminal: <code>ollama pull mistral</code>.`);
+            }
+          } else {
+            throw new Error("Ollama is offline on the backend server.");
+          }
+        })
+        .catch(err => {
+          statusBadge.innerText = "STANDBY";
+          statusBadge.className = "connection-badge offline";
+          statusBadge.style.background = "rgba(239, 68, 68, 0.2)";
+          statusBadge.style.color = "#EF4444";
+          statusBadge.style.borderColor = "rgba(239, 68, 68, 0.5)";
+          
+          selectControl.innerHTML = `
+            <option value="mistral">mistral (standby)</option>
+            <option value="llama3">llama3 (standby)</option>
+            <option value="phi3">phi3 (standby)</option>
+            <option value="gemma">gemma (standby)</option>
+            <option value="qwen2">qwen2 (standby)</option>
+          `;
+          AppState.model = selectControl.value;
+          document.getElementById('ctrl-model').innerText = AppState.model;
+          addChatBubble("bot", `⚠️ Ollama scanner reports offline or standby status.`);
+        });
+      return;
+    }
+    
+    // Query local Ollama API directly (Simulator fallback / local direct check)
     fetch('http://127.0.0.1:11434/api/tags')
       .then(response => {
         if (!response.ok) throw new Error("Server responded with error status");
@@ -2064,6 +2175,9 @@
         // Success: Ollama is online
         statusBadge.innerText = "ONLINE";
         statusBadge.className = "connection-badge online";
+        statusBadge.style.background = "rgba(16, 185, 129, 0.2)";
+        statusBadge.style.color = "#10B981";
+        statusBadge.style.borderColor = "rgba(16, 185, 129, 0.5)";
         
         if (data.models && data.models.length > 0) {
           AppState.local_models = data.models;
@@ -2092,6 +2206,9 @@
         // Fail: Ollama is offline or CORS blocked
         statusBadge.innerText = "STANDBY";
         statusBadge.className = "connection-badge offline";
+        statusBadge.style.background = "rgba(239, 68, 68, 0.2)";
+        statusBadge.style.color = "#EF4444";
+        statusBadge.style.borderColor = "rgba(239, 68, 68, 0.5)";
         
         // Populate standard standby defaults if they aren't already populated
         selectControl.innerHTML = `
